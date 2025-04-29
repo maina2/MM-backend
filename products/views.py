@@ -3,12 +3,15 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductSerializer
+from .permissions import IsAdminUser
 
 class CategoryListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminUser]
 
     def get(self, request, *args, **kwargs):
         try:
@@ -38,6 +41,7 @@ class CategoryDetailView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, D
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     lookup_field = 'id'
+    permission_classes = [IsAdminUser]
 
     def get(self, request, id, *args, **kwargs):
         try:
@@ -78,11 +82,20 @@ class CategoryDetailView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, D
 class ProductListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [IsAdminUser]
+    filter_backends = [DjangoFilterBackend]  # Add filtering
+    filterset_fields = ['branch', 'category']  # Fields to filter by
+    pagination_class = None  # We'll define this in settings
 
     def get(self, request, *args, **kwargs):
         try:
-            products = self.get_queryset()
-            serializer = self.get_serializer(products, many=True)
+            # Apply filtering and pagination
+            queryset = self.filter_queryset(self.get_queryset())
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+            serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
@@ -107,6 +120,7 @@ class ProductDetailView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, De
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     lookup_field = 'id'
+    permission_classes = [IsAdminUser]
 
     def get(self, request, id, *args, **kwargs):
         try:
