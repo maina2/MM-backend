@@ -1,4 +1,5 @@
 from django.db import models
+from cloudinary.models import CloudinaryField
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -30,11 +31,12 @@ class Product(models.Model):
     stock = models.PositiveIntegerField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='products')
+    image = CloudinaryField('image', blank=True, null=True)  
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name} ({self.branch.name})"
 
     class Meta:
-        unique_together = ['name', 'branch']  # Prevent duplicate products per branch
+        unique_together = ['name', 'branch']
         ordering = ['name']
