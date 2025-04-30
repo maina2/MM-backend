@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import Order, OrderItem
 from products.serializers import ProductSerializer
 from products.models import Product
-
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
     product_id = serializers.PrimaryKeyRelatedField(
@@ -12,6 +11,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = ['id', 'product', 'product_id', 'quantity', 'price']
+        read_only_fields = ['price']  # Make price read-only
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
