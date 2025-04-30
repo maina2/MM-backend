@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Payment
 from orders.serializers import OrderSerializer
-from orders.models import Order
+
 class PaymentSerializer(serializers.ModelSerializer):
     order = OrderSerializer(read_only=True)
     order_id = serializers.PrimaryKeyRelatedField(

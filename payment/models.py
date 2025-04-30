@@ -15,8 +15,8 @@ class Payment(models.Model):
         ],
         default='pending'
     )
-    transaction_id = models.CharField(max_length=100, blank=True, null=True)  
-    checkout_request_id = models.CharField(max_length=100, blank=True, null=True)  
+    transaction_id = models.CharField(max_length=100, blank=True, null=True)  # M-Pesa Transaction ID
+    checkout_request_id = models.CharField(max_length=100, blank=True, null=True)  # For STK Push tracking
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

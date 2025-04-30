@@ -8,7 +8,7 @@ from orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer
 from django.conf import settings
-from mpesa import MpesaClient
+from daraja.mpesa import MpesaClient
 
 class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     serializer_class = PaymentSerializer
