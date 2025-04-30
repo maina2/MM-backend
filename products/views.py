@@ -4,10 +4,11 @@ from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveMode
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Category, Product
-from .serializers import CategorySerializer, ProductSerializer
+from .models import Category, Branch, Product
+from .serializers import CategorySerializer, BranchSerializer, ProductSerializer
 from .permissions import IsAdminUser
 
+# Existing views (unchanged)
 class CategoryListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -83,13 +84,12 @@ class ProductListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAdminUser]
-    filter_backends = [DjangoFilterBackend]  # Add filtering
-    filterset_fields = ['branch', 'category']  # Fields to filter by
-    pagination_class = None  # We'll define this in settings
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['branch', 'category']
+    pagination_class = None
 
     def get(self, request, *args, **kwargs):
         try:
-            # Apply filtering and pagination
             queryset = self.filter_queryset(self.get_queryset())
             page = self.paginate_queryset(queryset)
             if page is not None:
@@ -155,5 +155,75 @@ class ProductDetailView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, De
         except Exception as e:
             return Response(
                 {"error": f"Failed to delete product: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+# New views for bulk creation
+class BulkCategoryCreateView(GenericAPIView):
+    serializer_class = CategorySerializer
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            # Expecting a list of category data
+            if not isinstance(request.data, list):
+                return Response(
+                    {"error": "Expected a list of category data"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            serializer = self.get_serializer(data=request.data, many=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to create categories: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class BulkBranchCreateView(GenericAPIView):
+    serializer_class = BranchSerializer
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            # Expecting a list of branch data
+            if not isinstance(request.data, list):
+                return Response(
+                    {"error": "Expected a list of branch data"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            serializer = self.get_serializer(data=request.data, many=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to create branches: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class BulkProductCreateView(GenericAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            # Expecting a list of product data
+            if not isinstance(request.data, list):
+                return Response(
+                    {"error": "Expected a list of product data"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            serializer = self.get_serializer(data=request.data, many=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to create products: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

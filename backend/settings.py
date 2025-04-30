@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 from urllib.parse import urlparse
 from decouple import config
 from dj_database_url import parse as db_url
+from datetime import timedelta
+
 
 load_dotenv()
 
@@ -66,7 +68,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 3,
 }
-
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    
+    'ROTATE_REFRESH_TOKENS': True,                 
+    'BLACKLIST_AFTER_ROTATION': True,             
+    'AUTH_HEADER_TYPES': ('Bearer',),              
+    'USER_ID_FIELD': 'id',                         
+    'USER_ID_CLAIM': 'user_id',                    
+}
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
