@@ -11,6 +11,9 @@ from django.conf import settings
 import requests
 import base64
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MpesaService:
     def __init__(self):
@@ -123,7 +126,7 @@ class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
                 status='pending'
             )
 
-            callback_url = "https://your-ngrok-url/api/payment/callback/"
+            callback_url = "https://39d0-102-217-64-46.ngrok-free.app/api/payment/callback/"
             response = self.mpesa_service.stk_push(
                 phone_number=phone_number,
                 amount=int(order.total_amount),
@@ -168,7 +171,10 @@ class PaymentCallbackView(GenericAPIView):
             result_code = stk_callback.get('ResultCode')
             result_desc = stk_callback.get('ResultDesc')
 
+            logger.info(f"Received callback with CheckoutRequestID: {checkout_request_id}")
+
             payment = Payment.objects.get(checkout_request_id=checkout_request_id)
+            logger.info(f"Found payment: {payment.id} for order: {payment.order.id}")
 
             if result_code == 0:
                 payment.status = 'successful'
@@ -181,14 +187,17 @@ class PaymentCallbackView(GenericAPIView):
                 payment.status = 'failed' if result_code == 1032 else 'cancelled'
 
             payment.save()
+            logger.info(f"Updated payment status to: {payment.status}")
             return Response({"ResultDesc": "Callback received successfully"}, status=status.HTTP_200_OK)
 
         except Payment.DoesNotExist:
+            logger.error(f"Payment not found for CheckoutRequestID: {checkout_request_id}")
             return Response(
                 {"error": "Payment not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            logger.error(f"Failed to process callback: {str(e)}")
             return Response(
                 {"error": f"Failed to process callback: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

@@ -1,0 +1,5 @@
+Watching for file changes with StatReloader
+Received callback with CheckoutRequestID: ws_CO_01052025114250188712345678
+Found payment: 1 for order: 1
+Updated payment status to: successful
+Bad Request: /api/payments/
