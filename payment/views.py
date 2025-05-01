@@ -8,15 +8,61 @@ from orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer
 from django.conf import settings
-from daraja.mpesa import MpesaClient
+import requests
+import base64
+from datetime import datetime
+
+class MpesaService:
+    def __init__(self):
+        self.consumer_key = settings.MPESA_CONSUMER_KEY
+        self.consumer_secret = settings.MPESA_CONSUMER_SECRET
+        self.shortcode = settings.MPESA_SHORTCODE
+        self.passkey = settings.MPESA_PASSKEY
+        self.base_url = "https://sandbox.safaricom.co.ke"  # Use "https://api.safaricom.co.ke" for production
+        self.access_token = self.get_access_token()
+
+    def get_access_token(self):
+        url = f"{self.base_url}/oauth/v1/generate?grant_type=client_credentials"
+        credentials = base64.b64encode(f"{self.consumer_key}:{self.consumer_secret}".encode()).decode()
+        headers = {
+            "Authorization": f"Basic {credentials}"
+        }
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json().get("access_token")
+
+    def generate_password(self, timestamp):
+        data_to_encode = f"{self.shortcode}{self.passkey}{timestamp}"
+        return base64.b64encode(data_to_encode.encode()).decode()
+
+    def stk_push(self, phone_number, amount, account_reference, transaction_desc, callback_url):
+        url = f"{self.base_url}/mpesa/stkpush/v1/processrequest"
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        password = self.generate_password(timestamp)
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "BusinessShortCode": self.shortcode,
+            "Password": password,
+            "Timestamp": timestamp,
+            "TransactionType": "CustomerPayBillOnline",
+            "Amount": amount,
+            "PartyA": phone_number,
+            "PartyB": self.shortcode,
+            "PhoneNumber": phone_number,
+            "CallBackURL": callback_url,
+            "AccountReference": account_reference,
+            "TransactionDesc": transaction_desc
+        }
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json()
 
 class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     serializer_class = PaymentSerializer
-    mpesa_client = MpesaClient(
-        consumer_key=settings.MPESA_CONSUMER_KEY,
-        consumer_secret=settings.MPESA_CONSUMER_SECRET,
-        environment='sandbox'
-    )
+    mpesa_service = MpesaService()
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -49,7 +95,6 @@ class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
                     {"error": "Phone number is required for M-Pesa payment"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            # Ensure phone number starts with 254 and is 12 digits
             phone_number = phone_number.strip()
             if phone_number.startswith('+'):
                 phone_number = phone_number[1:]
@@ -71,7 +116,6 @@ class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Create Payment instance
             payment = Payment.objects.create(
                 order=order,
                 amount=order.total_amount,
@@ -79,16 +123,13 @@ class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
                 status='pending'
             )
 
-            # Initiate M-Pesa STK Push
-            callback_url = "https://your-ngrok-url/api/payment/callback/"  # Replace with your ngrok URL
-            response = self.mpesa_client.stk_push(
+            callback_url = "https://your-ngrok-url/api/payment/callback/"
+            response = self.mpesa_service.stk_push(
                 phone_number=phone_number,
                 amount=int(order.total_amount),
                 account_reference=f"Order-{order.id}",
                 transaction_desc=f"Payment for Order {order.id}",
-                callback_url=callback_url,
-                business_shortcode=settings.MPESA_SHORTCODE,
-                passkey=settings.MPESA_PASSKEY
+                callback_url=callback_url
             )
 
             if response.get('ResponseCode') == '0':

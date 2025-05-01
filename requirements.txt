@@ -1,8 +1,10 @@
 asgiref==3.8.1
 certifi==2025.4.26
+cffi==1.17.1
 chardet==5.2.0
 charset-normalizer==3.4.1
 cloudinary==1.42.2
+cryptography==44.0.2
 daraja-mpesa==1.2.1
 dj-database-url==2.3.0
 Django==5.2
@@ -15,6 +17,7 @@ dotenv==0.9.9
 future==1.0.0
 idna==3.10
 psycopg2-binary==2.9.10
+pycparser==2.22
 PyJWT==2.10.1
 python-daraja==1.2.4
 python-decouple==3.8
