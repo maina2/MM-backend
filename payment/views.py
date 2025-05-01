@@ -8,14 +8,14 @@ from orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer
 from django.conf import settings
-from daraja.mpesa import MpesaClient
+from mpesa import MpesaClient
 
 class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     serializer_class = PaymentSerializer
     mpesa_client = MpesaClient(
         consumer_key=settings.MPESA_CONSUMER_KEY,
         consumer_secret=settings.MPESA_CONSUMER_SECRET,
-        environment='sandbox'  # Use 'production' for live environment
+        environment='sandbox'
     )
 
     def get_permissions(self):
@@ -49,6 +49,16 @@ class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
                     {"error": "Phone number is required for M-Pesa payment"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            # Ensure phone number starts with 254 and is 12 digits
+            phone_number = phone_number.strip()
+            if phone_number.startswith('+'):
+                phone_number = phone_number[1:]
+            if not phone_number.startswith('254') or len(phone_number) != 12 or not phone_number.isdigit():
+                return Response(
+                    {"error": "Invalid phone number. Use format 2547XXXXXXXXX"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             order = Order.objects.get(id=order_id)
             if order.customer != request.user:
                 return Response(
@@ -73,7 +83,7 @@ class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
             callback_url = "https://your-ngrok-url/api/payment/callback/"  # Replace with your ngrok URL
             response = self.mpesa_client.stk_push(
                 phone_number=phone_number,
-                amount=int(order.total_amount),  # M-Pesa API expects integer amount
+                amount=int(order.total_amount),
                 account_reference=f"Order-{order.id}",
                 transaction_desc=f"Payment for Order {order.id}",
                 callback_url=callback_url,
@@ -81,7 +91,7 @@ class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
                 passkey=settings.MPESA_PASSKEY
             )
 
-            if response.get('ResponseCode') == '0':  # Success
+            if response.get('ResponseCode') == '0':
                 payment.checkout_request_id = response.get('CheckoutRequestID')
                 payment.save()
                 serializer = self.get_serializer(payment)
@@ -119,14 +129,14 @@ class PaymentCallbackView(GenericAPIView):
 
             payment = Payment.objects.get(checkout_request_id=checkout_request_id)
 
-            if result_code == 0:  # Payment successful
+            if result_code == 0:
                 payment.status = 'successful'
                 callback_metadata = stk_callback.get('CallbackMetadata', {}).get('Item', [])
                 for item in callback_metadata:
                     if item.get('Name') == 'MpesaReceiptNumber':
                         payment.transaction_id = item.get('Value')
                         break
-            else:  # Payment failed or cancelled
+            else:
                 payment.status = 'failed' if result_code == 1032 else 'cancelled'
 
             payment.save()

@@ -4,7 +4,7 @@ from orders.models import Order
 class Payment(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    phone_number = models.CharField(max_length=15)  # Customer's phone number for M-Pesa
+    phone_number = models.CharField(max_length=15)
     status = models.CharField(
         max_length=20,
         choices=[
@@ -15,8 +15,8 @@ class Payment(models.Model):
         ],
         default='pending'
     )
-    transaction_id = models.CharField(max_length=100, blank=True, null=True)  # M-Pesa Transaction ID
-    checkout_request_id = models.CharField(max_length=100, blank=True, null=True)  # For STK Push tracking
+    transaction_id = models.CharField(max_length=100, blank=True, null=True)
+    checkout_request_id = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

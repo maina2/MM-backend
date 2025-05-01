@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'orders',
     'delivery',
     'users', 
+    'payment'
 ]
 AUTH_USER_MODEL = 'users.CustomUser'
 
