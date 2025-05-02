@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import Delivery
 from orders.serializers import OrderSerializer
 from users.serializers import CustomUserSerializer
-
+from orders.models import Order
+from users.models import CustomUser
 class DeliverySerializer(serializers.ModelSerializer):
     order = OrderSerializer(read_only=True)
     order_id = serializers.PrimaryKeyRelatedField(

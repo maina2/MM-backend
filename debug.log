@@ -3,3 +3,22 @@ Received callback with CheckoutRequestID: ws_CO_01052025114250188712345678
 Found payment: 1 for order: 1
 Updated payment status to: successful
 Bad Request: /api/payments/
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\products\permissions.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\delivery\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\delivery\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\delivery\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\delivery\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\delivery\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\delivery\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\models.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\models.py changed, reloading.
+Watching for file changes with StatReloader
