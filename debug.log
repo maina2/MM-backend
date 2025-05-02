@@ -23,3 +23,6 @@ Watching for file changes with StatReloader
 C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\models.py changed, reloading.
 Watching for file changes with StatReloader
 Watching for file changes with StatReloader
+Bad Request: /api/deliveries/
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\delivery\views.py changed, reloading.
+Watching for file changes with StatReloader

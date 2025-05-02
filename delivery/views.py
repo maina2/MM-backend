@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from products.permissions import IsAdminUser, IsDeliveryPerson
 from orders.models import Order
 from payment.models import Payment
+from users.models import CustomUser
 from .models import Delivery
 from .serializers import DeliverySerializer
 from django.utils import timezone
@@ -43,6 +44,7 @@ class DeliveryListView(GenericAPIView, ListModelMixin, CreateModelMixin):
             delivery_address = request.data.get('delivery_address')
             latitude = request.data.get('latitude')
             longitude = request.data.get('longitude')
+            delivery_person_id = request.data.get('delivery_person_id')
 
             if not delivery_address:
                 return Response(
@@ -74,12 +76,32 @@ class DeliveryListView(GenericAPIView, ListModelMixin, CreateModelMixin):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Create the delivery with latitude and longitude
+            # Handle delivery person assignment (only for admins)
+            delivery_person = None
+            if delivery_person_id:
+                if not request.user.is_admin:
+                    return Response(
+                        {"error": "Only admins can assign a delivery person"},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+                try:
+                    delivery_person = CustomUser.objects.get(
+                        id=delivery_person_id,
+                        is_delivery_person=True
+                    )
+                except CustomUser.DoesNotExist:
+                    return Response(
+                        {"error": "Delivery person not found or not a valid delivery person"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            # Create the delivery with latitude, longitude, and optional delivery person
             delivery = Delivery.objects.create(
                 order=order,
                 delivery_address=delivery_address,
                 latitude=latitude,
                 longitude=longitude,
+                delivery_person=delivery_person,
                 status='pending'
             )
 
