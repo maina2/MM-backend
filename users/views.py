@@ -5,6 +5,9 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 from .serializers import CustomUserSerializer
+from social_django.utils import load_strategy
+from social_django.models import UserSocialAuth
+from rest_framework.permissions import AllowAny
 
 class RegisterView(APIView):
     def post(self, request):
