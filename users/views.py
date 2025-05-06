@@ -58,3 +58,44 @@ class LoginView(APIView):
                 {"error": f"Failed to login: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+class GoogleLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        code = request.data.get('code')
+        if not code:
+            return Response({'error': 'Authorization code not provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Load the social auth strategy
+            strategy = load_strategy(request)
+            backend = strategy.get_backend('google-oauth2')
+
+            # Exchange the code for an access token and user data
+            user = backend.complete(request=request, code=code)
+
+            if not user:
+                return Response({'error': 'Authentication failed'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the user exists, or create a new one
+            social_user = UserSocialAuth.objects.get(user=user)
+            user_data = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'phone_number': getattr(user, 'phone_number', ''),
+                'is_admin': user.is_admin,
+                'is_delivery_person': getattr(user, 'is_delivery_person', False),
+            }
+
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'user': user_data,
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'social_django',
     'cloudinary_storage',
     'cloudinary',
     'rest_framework',
@@ -76,6 +77,32 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 3,
 }
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',  
+    'django.contrib.auth.backends.ModelBackend', 
+)
+# Google OAuth2 Credentials
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = 'YOUR_CLIENT_ID.apps.googleusercontent.com'  # Replace with your Client ID
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = 'YOUR_CLIENT_SECRET'  # Replace with your Client Secret
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'openid',
+]
+
+# Social Auth Pipeline
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    
