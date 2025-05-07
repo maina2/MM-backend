@@ -67,6 +67,7 @@ class GoogleLoginView(APIView):
 
     def post(self, request):
         code = request.data.get('code')
+        print(f"Received code: {code}")
         if not code:
             return Response({'error': 'Authorization code not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -74,9 +75,16 @@ class GoogleLoginView(APIView):
             # Load the social auth strategy
             strategy = load_strategy(request)
             backend = strategy.get_backend('google-oauth2')
+            print(f"Backend loaded: {backend.name}")
+
+            # Set the redirect URI explicitly
+            redirect_uri = 'http://localhost:5173/auth/google/callback'
+            backend.REDIRECT_URI = redirect_uri
+            print(f"Set redirect URI: {redirect_uri}")
 
             # Exchange the code for an access token and user data
             user = backend.complete(request=request, code=code)
+            print(f"User after code exchange: {user}")
 
             if not user:
                 return Response({'error': 'Authentication failed'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -101,4 +109,5 @@ class GoogleLoginView(APIView):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(f"Error during code exchange: {str(e)}")
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
