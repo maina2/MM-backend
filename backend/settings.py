@@ -82,8 +82,8 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', 
 )
 # Google OAuth2 Credentials
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = 'YOUR_CLIENT_ID.apps.googleusercontent.com'  # Replace with your Client ID
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = 'YOUR_CLIENT_SECRET'  # Replace with your Client Secret
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY=config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET=config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
