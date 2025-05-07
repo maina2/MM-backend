@@ -77,3 +77,14 @@ Bad Request: /api/users/google/
 Unauthorized: /api/users/login/
 Unauthorized: /api/users/login/
 Unauthorized: /api/users/login/
+Bad Request: /api/users/google/
+Unauthorized: /api/users/login/
+Watching for file changes with StatReloader
+Not Found: /
+Not Found: /favicon.ico
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\settings.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\settings.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/users/google/

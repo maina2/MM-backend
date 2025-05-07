@@ -66,8 +66,10 @@ class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        print(f"Request data: {request.data}")
         code = request.data.get('code')
         print(f"Received code: {code}")
+
         if not code:
             return Response({'error': 'Authorization code not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
