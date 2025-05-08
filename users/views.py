@@ -5,8 +5,8 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 from .serializers import CustomUserSerializer
-from social_django.utils import load_strategy
-from social_django.models import UserSocialAuth
+from django.conf import settings  
+import requests  
 from rest_framework.permissions import AllowAny
 import logging
 
@@ -69,11 +69,8 @@ class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # Step 1: Verify code
-        logger.debug(f"Request data: {request.data}")
         code = request.data.get('code')
-        state = request.data.get('state')  # Log state for debugging
-        logger.debug(f"Received code: {code}, state: {state}")
+        logger.debug(f"Received code: {code}")
 
         if not code or not isinstance(code, str):
             logger.error("Invalid or missing authorization code")
@@ -82,79 +79,70 @@ class GoogleLoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verify content type
-        content_type = request.headers.get('Content-Type', '')
-        if 'application/json' not in content_type.lower():
-            logger.warning(f"Unexpected content type: {content_type}")
-            return Response(
-                {'error': 'Content-Type must be application/json'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Exchange code for access token
+        token_url = 'https://oauth2.googleapis.com/token'
+        token_data = {
+            'code': code,
+            'client_id': settings.GOOGLE_CLIENT_ID,
+            'client_secret': settings.GOOGLE_CLIENT_SECRET,
+            'redirect_uri': settings.GOOGLE_REDIRECT_URI,
+            'grant_type': 'authorization_code',
+        }
 
         try:
-            # Step 2: Code exchange
-            logger.debug("Loading social auth strategy...")
-            strategy = load_strategy(request)
-            backend = strategy.get_backend('google-oauth2')
-            logger.debug(f"Backend loaded: {backend.name}")
-            logger.debug(f"Backend config - Client ID: {backend.setting('KEY')}")
+            token_response = requests.post(token_url, data=token_data)
+            token_response.raise_for_status()
+            token_data = token_response.json()
+            access_token = token_data.get('access_token')
+            logger.debug(f"Access token received: {access_token}")
 
-            redirect_uri = backend.setting('REDIRECT_URI', 'http://localhost:5173/auth/google/callback')
-            logger.debug(f"Using redirect URI: {redirect_uri}")
+            # Fetch user info
+            user_info_url = 'https://www.googleapis.com/oauth2/v3/userinfo'
+            user_info_response = requests.get(
+                user_info_url,
+                headers={'Authorization': f'Bearer {access_token}'}
+            )
+            user_info_response.raise_for_status()
+            user_info = user_info_response.json()
+            logger.debug(f"User info: {user_info}")
 
-            logger.info("Attempting code exchange with Google...")
-            # Omit state, as validation is skipped
-            user = backend.complete(request=request, code=code)
-            logger.debug(f"User after code exchange: {user}")
+            # Extract user details
+            email = user_info.get('email')
+            name = user_info.get('name', '')
+            google_id = user_info.get('sub')
 
-            if not user:
-                logger.error("No user returned from backend.complete")
-                return Response(
-                    {'error': 'Authentication failed: No user found'},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-
-            # Check or create social auth record
+            # Find or create user
             try:
-                social_user = UserSocialAuth.objects.get(user=user)
-            except UserSocialAuth.DoesNotExist:
-                logger.warning(f"No social auth record for user: {user}")
-                UserSocialAuth.objects.create(
-                    user=user,
-                    provider='google-oauth2',
-                    uid=user.email,
-                    extra_data={'email': user.email}
+                user = CustomUser.objects.get(email=email)
+            except CustomUser.DoesNotExist:
+                user = CustomUser.objects.create(
+                    email=email,
+                    username=email.split('@')[0],
+                    first_name=name.split()[0] if name else '',
+                    last_name=' '.join(name.split()[1:]) if name else '',
+                    is_active=True
                 )
-                social_user = UserSocialAuth.objects.get(user=user)
-
-            # Serialize user data
-            serializer = CustomUserSerializer(user)
-            user_data = serializer.data
+                user.set_unusable_password()
+                user.save()
 
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
+            serializer = CustomUserSerializer(user)
             return Response({
-                'user': user_data,
+                'user': serializer.data,
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
             }, status=status.HTTP_200_OK)
 
-        except Exception as e:
-            logger.error(f"Code exchange failed: {type(e).__name__}: {str(e)}", exc_info=True)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Token exchange failed: {str(e)}")
             return Response(
                 {'error': f"Authentication error: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-class GoogleAuthInitiateView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        state = request.data.get('state')
-        if not state or not isinstance(state, str):
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}", exc_info=True)
             return Response(
-                {'error': 'State parameter is missing or invalid'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': f"Unexpected error: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        request.session['oauth_state'] = state
-        return Response({'message': 'State stored'}, status=status.HTTP_200_OK)
