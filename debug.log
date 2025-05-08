@@ -115,3 +115,124 @@ C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJE
 Watching for file changes with StatReloader
 C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\models.py changed, reloading.
 Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+"OPTIONS /api/users/google/ HTTP/1.1" 500 59
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\settings.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+"OPTIONS /api/users/google/ HTTP/1.1" 200 0
+Request data: {'code': '4/0Ab_5qllvtwEnE8Wnril4BnNcSrZoCYABSMhJnobcvBmnZKZdvVi6k7MWKehaP9c921IISg'}
+Received code: 4/0Ab_5qllvtwEnE8Wnril4BnNcSrZoCYABSMhJnobcvBmnZKZdvVi6k7MWKehaP9c921IISg
+Loading social auth strategy...
+Backend loaded: google-oauth2
+Backend config - Client ID: 268798045689-i79dke9fhtqb4hmv4okk1gditsb49efi.apps.googleusercontent.com
+Using redirect URI: http://localhost:5173/auth/google/callback
+Attempting code exchange with Google...
+Code exchange failed: AuthMissingParameter: Missing needed parameter state
+Traceback (most recent call last):
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\views.py", line 107, in post
+    user = backend.complete(request=request, code=code)
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\base.py", line 46, in complete
+    return self.auth_complete(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\utils.py", line 235, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\oauth.py", line 434, in auth_complete
+    state = self.validate_state()
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\oauth.py", line 108, in validate_state
+    raise AuthMissingParameter(self, "state")
+social_core.exceptions.AuthMissingParameter: Missing needed parameter state
+Bad Request: /api/users/google/
+"POST /api/users/google/ HTTP/1.1" 400 64
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\views.py changed, reloading.
+Watching for file changes with StatReloader
+Request data: {'code': '4/0Ab_5qlkHfmiehYnp_HBB-pxrasIN0ifhYrgjUSrNdqcleGJn6zpBm_8XrPnZQ1Mv4gBx-Q'}
+Received code: 4/0Ab_5qlkHfmiehYnp_HBB-pxrasIN0ifhYrgjUSrNdqcleGJn6zpBm_8XrPnZQ1Mv4gBx-Q, state: None
+Invalid or missing state parameter
+Bad Request: /api/users/google/
+"POST /api/users/google/ HTTP/1.1" 400 49
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\views.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Request data: {'code': '4/0Ab_5qlkm_mG8NItbNOtsf-e_OlXNwJTubUf6IPHs1MBy2tXobVfI8bUZeTrmzTfJz8JBVg', 'state': 'a6eca4a3206da72460710459a50f8ff8'}
+Received code: 4/0Ab_5qlkm_mG8NItbNOtsf-e_OlXNwJTubUf6IPHs1MBy2tXobVfI8bUZeTrmzTfJz8JBVg, state: a6eca4a3206da72460710459a50f8ff8
+Loading social auth strategy...
+Backend loaded: google-oauth2
+Backend config - Client ID: 268798045689-i79dke9fhtqb4hmv4okk1gditsb49efi.apps.googleusercontent.com
+Using redirect URI: http://localhost:5173/auth/google/callback
+Attempting code exchange with Google...
+Code exchange failed: AuthMissingParameter: Missing needed parameter state
+Traceback (most recent call last):
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\views.py", line 113, in post
+    user = backend.complete(request=request, code=code, state=state)
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\base.py", line 46, in complete
+    return self.auth_complete(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\utils.py", line 235, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\oauth.py", line 434, in auth_complete
+    state = self.validate_state()
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\oauth.py", line 108, in validate_state
+    raise AuthMissingParameter(self, "state")
+social_core.exceptions.AuthMissingParameter: Missing needed parameter state
+Bad Request: /api/users/google/
+"POST /api/users/google/ HTTP/1.1" 400 64
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\settings.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\views.py changed, reloading.
+Watching for file changes with StatReloader
+Request data: {'code': '4/0Ab_5qlkSMf80YprvHRmz1x6ArGCN82w_SKEaTeOdROhKkin3-P0RsBTOUjBGX55u2STrmg', 'state': 'b69ea886de6e65b95599b10a9f1dcf20'}
+Received code: 4/0Ab_5qlkSMf80YprvHRmz1x6ArGCN82w_SKEaTeOdROhKkin3-P0RsBTOUjBGX55u2STrmg, state: b69ea886de6e65b95599b10a9f1dcf20
+Loading social auth strategy...
+Backend loaded: google-oauth2
+Backend config - Client ID: 268798045689-i79dke9fhtqb4hmv4okk1gditsb49efi.apps.googleusercontent.com
+Using redirect URI: http://localhost:5173/auth/google/callback
+Attempting code exchange with Google...
+Code exchange failed: AuthMissingParameter: Missing needed parameter state
+Traceback (most recent call last):
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\views.py", line 107, in post
+    user = backend.complete(request=request, code=code)
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\base.py", line 46, in complete
+    return self.auth_complete(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\utils.py", line 235, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\oauth.py", line 434, in auth_complete
+    state = self.validate_state()
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\oauth.py", line 108, in validate_state
+    raise AuthMissingParameter(self, "state")
+social_core.exceptions.AuthMissingParameter: Missing needed parameter state
+Bad Request: /api/users/google/
+"POST /api/users/google/ HTTP/1.1" 400 64
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\urls.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\urls.py changed, reloading.
+Watching for file changes with StatReloader
+Request data: {'code': '4/0Ab_5qlkpHUlHIZc805aQkHJsGRBu2yeg1slgjNq0Oj3-QcpRl5lMTDh7zCusi8TDQRka4w', 'state': '52b3dfb60002e28475fbc8c52a5d8383'}
+Received code: 4/0Ab_5qlkpHUlHIZc805aQkHJsGRBu2yeg1slgjNq0Oj3-QcpRl5lMTDh7zCusi8TDQRka4w, state: 52b3dfb60002e28475fbc8c52a5d8383
+Loading social auth strategy...
+Backend loaded: google-oauth2
+Backend config - Client ID: 268798045689-i79dke9fhtqb4hmv4okk1gditsb49efi.apps.googleusercontent.com
+Using redirect URI: http://localhost:5173/auth/google/callback
+Attempting code exchange with Google...
+Code exchange failed: AuthMissingParameter: Missing needed parameter state
+Traceback (most recent call last):
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\users\views.py", line 107, in post
+    user = backend.complete(request=request, code=code)
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\base.py", line 46, in complete
+    return self.auth_complete(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\utils.py", line 235, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\oauth.py", line 434, in auth_complete
+    state = self.validate_state()
+  File "C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\env\Lib\site-packages\social_core\backends\oauth.py", line 108, in validate_state
+    raise AuthMissingParameter(self, "state")
+social_core.exceptions.AuthMissingParameter: Missing needed parameter state
+Bad Request: /api/users/google/
+"POST /api/users/google/ HTTP/1.1" 400 64
+Unauthorized: /api/users/login/
+"POST /api/users/login/ HTTP/1.1" 401 31

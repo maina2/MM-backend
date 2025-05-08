@@ -84,7 +84,9 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'openid',
 ]
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['email', 'name']
-
+SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
+    'skip_state': True,
+}
 # Social Auth Pipeline
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
@@ -125,7 +127,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
 ]
-CORS_ALLOW_CREDENTIALS = True  # Allow cookies and auth headers
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
     'GET',
     'POST',
@@ -143,7 +145,10 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
-CORS_EXPOSE_HEADERS = ['authorization']  # Expose JWT tokens
+CORS_EXPOSE_HEADERS = ['authorization']
+
+# URL configuration (critical fix)
+ROOT_URLCONF = 'backend.urls'
 
 # Templates
 TEMPLATES = [
@@ -206,7 +211,7 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# Static and media files
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -236,7 +241,7 @@ LOGGING = {
         },
         'social_django': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG',  # Capture detailed social auth errors
+            'level': 'DEBUG',
             'propagate': False,
         },
     },

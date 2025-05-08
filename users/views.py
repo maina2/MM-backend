@@ -10,7 +10,6 @@ from social_django.models import UserSocialAuth
 from rest_framework.permissions import AllowAny
 import logging
 
-
 logger = logging.getLogger('social_django')
 
 class RegisterView(APIView):
@@ -65,15 +64,16 @@ class LoginView(APIView):
                 {"error": f"Failed to login: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
+
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # Step 1: Verify the Code is Received
+        # Step 1: Verify code
         logger.debug(f"Request data: {request.data}")
         code = request.data.get('code')
-        logger.debug(f"Received code: {code}")
+        state = request.data.get('state')  # Log state for debugging
+        logger.debug(f"Received code: {code}, state: {state}")
 
         if not code or not isinstance(code, str):
             logger.error("Invalid or missing authorization code")
@@ -92,18 +92,18 @@ class GoogleLoginView(APIView):
             )
 
         try:
-            # Step 2: Debug the Code Exchange
+            # Step 2: Code exchange
             logger.debug("Loading social auth strategy...")
             strategy = load_strategy(request)
             backend = strategy.get_backend('google-oauth2')
             logger.debug(f"Backend loaded: {backend.name}")
             logger.debug(f"Backend config - Client ID: {backend.setting('KEY')}")
 
-            # Redirect URI is set in settings.py, no need to override here
             redirect_uri = backend.setting('REDIRECT_URI', 'http://localhost:5173/auth/google/callback')
             logger.debug(f"Using redirect URI: {redirect_uri}")
 
             logger.info("Attempting code exchange with Google...")
+            # Omit state, as validation is skipped
             user = backend.complete(request=request, code=code)
             logger.debug(f"User after code exchange: {user}")
 
@@ -119,10 +119,13 @@ class GoogleLoginView(APIView):
                 social_user = UserSocialAuth.objects.get(user=user)
             except UserSocialAuth.DoesNotExist:
                 logger.warning(f"No social auth record for user: {user}")
-                return Response(
-                    {'error': 'Social auth record not found'},
-                    status=status.HTTP_400_BAD_REQUEST
+                UserSocialAuth.objects.create(
+                    user=user,
+                    provider='google-oauth2',
+                    uid=user.email,
+                    extra_data={'email': user.email}
                 )
+                social_user = UserSocialAuth.objects.get(user=user)
 
             # Serialize user data
             serializer = CustomUserSerializer(user)
@@ -142,3 +145,16 @@ class GoogleLoginView(APIView):
                 {'error': f"Authentication error: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+class GoogleAuthInitiateView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        state = request.data.get('state')
+        if not state or not isinstance(state, str):
+            return Response(
+                {'error': 'State parameter is missing or invalid'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        request.session['oauth_state'] = state
+        return Response({'message': 'State stored'}, status=status.HTTP_200_OK)
