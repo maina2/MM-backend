@@ -241,3 +241,5 @@ Watching for file changes with StatReloader
 "POST /api/users/google/ HTTP/1.1" 200 622
 "POST /api/users/google/ HTTP/1.1" 200 622
 Watching for file changes with StatReloader
+"OPTIONS /api/users/google/ HTTP/1.1" 200 0
+"POST /api/users/google/ HTTP/1.1" 200 622
