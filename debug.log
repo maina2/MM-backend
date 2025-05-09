@@ -244,3 +244,23 @@ Watching for file changes with StatReloader
 "OPTIONS /api/users/google/ HTTP/1.1" 200 0
 "POST /api/users/google/ HTTP/1.1" 200 622
 Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+"OPTIONS /api/products/products/?search=apple&category=groceries HTTP/1.1" 200 0
+Unauthorized: /api/products/products/
+"GET /api/products/products/?search=apple&category=groceries HTTP/1.1" 401 183
+"OPTIONS /api/users/google/ HTTP/1.1" 200 0
+"POST /api/users/google/ HTTP/1.1" 200 622
+Internal Server Error: /api/products/products/
+"GET /api/products/products/?search=apple&category=groceries HTTP/1.1" 500 170
+"OPTIONS /api/products/?search=apple&category=groceries HTTP/1.1" 200 0
+Not Found: /api/products/
+"GET /api/products/?search=apple&category=groceries HTTP/1.1" 404 179
+"OPTIONS /api/products/?search=&category= HTTP/1.1" 200 0
+Not Found: /api/products/
+"GET /api/products/?search=&category= HTTP/1.1" 404 179
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\urls.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+"GET /api/products/?search=&category= HTTP/1.1" 200 2
+"GET /api/products/?search=&category= HTTP/1.1" 200 2
