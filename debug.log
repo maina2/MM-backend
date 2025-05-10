@@ -300,3 +300,6 @@ Watching for file changes with StatReloader
 "GET /api/categories/ HTTP/1.1" 200 558
 "GET /api/categories/ HTTP/1.1" 200 558
 "GET /api/products/ HTTP/1.1" 200 5928
+Watching for file changes with StatReloader
+"GET /api/categories/ HTTP/1.1" 200 558
+"GET /api/products/ HTTP/1.1" 200 5928
