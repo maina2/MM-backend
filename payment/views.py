@@ -1,70 +1,27 @@
 from rest_framework import status
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from products.permissions import IsAdminUser
 from orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer
 from django.conf import settings
-import requests
-import base64
-from datetime import datetime
+from . import MpesaService
 import logging
 
 logger = logging.getLogger(__name__)
 
-class MpesaService:
-    def __init__(self):
-        self.consumer_key = settings.MPESA_CONSUMER_KEY
-        self.consumer_secret = settings.MPESA_CONSUMER_SECRET
-        self.shortcode = settings.MPESA_SHORTCODE
-        self.passkey = settings.MPESA_PASSKEY
-        self.base_url = "https://sandbox.safaricom.co.ke"  # Use "https://api.safaricom.co.ke" for production
-        self.access_token = self.get_access_token()
-
-    def get_access_token(self):
-        url = f"{self.base_url}/oauth/v1/generate?grant_type=client_credentials"
-        credentials = base64.b64encode(f"{self.consumer_key}:{self.consumer_secret}".encode()).decode()
-        headers = {
-            "Authorization": f"Basic {credentials}"
-        }
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        return response.json().get("access_token")
-
-    def generate_password(self, timestamp):
-        data_to_encode = f"{self.shortcode}{self.passkey}{timestamp}"
-        return base64.b64encode(data_to_encode.encode()).decode()
-
-    def stk_push(self, phone_number, amount, account_reference, transaction_desc, callback_url):
-        url = f"{self.base_url}/mpesa/stkpush/v1/processrequest"
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        password = self.generate_password(timestamp)
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "BusinessShortCode": self.shortcode,
-            "Password": password,
-            "Timestamp": timestamp,
-            "TransactionType": "CustomerPayBillOnline",
-            "Amount": amount,
-            "PartyA": phone_number,
-            "PartyB": self.shortcode,
-            "PhoneNumber": phone_number,
-            "CallBackURL": callback_url,
-            "AccountReference": account_reference,
-            "TransactionDesc": transaction_desc
-        }
-        response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()
-        return response.json()
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     serializer_class = PaymentSerializer
+    pagination_class = StandardResultsSetPagination
     mpesa_service = MpesaService()
 
     def get_permissions(self):
@@ -80,85 +37,56 @@ class PaymentListView(GenericAPIView, ListModelMixin, CreateModelMixin):
 
     def get(self, request, *args, **kwargs):
         try:
-            payments = self.get_queryset()
-            serializer = self.get_serializer(payments, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return self.list(request, *args, **kwargs)
         except Exception as e:
+            logger.error(f"Failed to fetch payments: {str(e)}")
             return Response(
-                {"error": f"Failed to fetch payments: {str(e)}"},
+                {"detail": f"Failed to fetch payments: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     def post(self, request, *args, **kwargs):
         try:
-            order_id = request.data.get('order_id')
-            phone_number = request.data.get('phone_number')
-            if not phone_number:
-                return Response(
-                    {"error": "Phone number is required for M-Pesa payment"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            phone_number = phone_number.strip()
-            if phone_number.startswith('+'):
-                phone_number = phone_number[1:]
-            if not phone_number.startswith('254') or len(phone_number) != 12 or not phone_number.isdigit():
-                return Response(
-                    {"error": "Invalid phone number. Use format 2547XXXXXXXXX"},
-                    status=status.HTTP_400_BAD_REQUEST
+            serializer = self.get_serializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                payment = serializer.save()
+                callback_url = settings.MPESA_CALLBACK_URL
+                response = self.mpesa_service.stk_push(
+                    phone_number=payment.phone_number,
+                    amount=payment.amount,
+                    account_reference=f"Order-{payment.order.id}",
+                    transaction_desc=f"Payment for Order {payment.order.id}",
+                    callback_url=callback_url
                 )
 
-            order = Order.objects.get(id=order_id)
-            if order.customer != request.user:
-                return Response(
-                    {"error": "You can only create payments for your own orders"},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            if hasattr(order, 'payment'):
-                return Response(
-                    {"error": "A payment already exists for this order"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            payment = Payment.objects.create(
-                order=order,
-                amount=order.total_amount,
-                phone_number=phone_number,
-                status='pending'
+                if response.get('ResponseCode') == '0':
+                    payment.checkout_request_id = response.get('CheckoutRequestID')
+                    payment.save()
+                    return Response(
+                        serializer.data,
+                        status=status.HTTP_202_ACCEPTED
+                    )
+                else:
+                    payment.status = 'failed'
+                    payment.error_message = response.get('ResponseDescription', 'Unknown error')
+                    payment.save()
+                    return Response(
+                        {"detail": "Failed to initiate M-Pesa payment", "errors": response},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            return Response(
+                {"detail": "Invalid payment data", "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
             )
-
-            callback_url = "https://39d0-102-217-64-46.ngrok-free.app/api/payment/callback/"
-            response = self.mpesa_service.stk_push(
-                phone_number=phone_number,
-                amount=int(order.total_amount),
-                account_reference=f"Order-{order.id}",
-                transaction_desc=f"Payment for Order {order.id}",
-                callback_url=callback_url
-            )
-
-            if response.get('ResponseCode') == '0':
-                payment.checkout_request_id = response.get('CheckoutRequestID')
-                payment.save()
-                serializer = self.get_serializer(payment)
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_202_ACCEPTED
-                )
-            else:
-                payment.status = 'failed'
-                payment.save()
-                return Response(
-                    {"error": "Failed to initiate M-Pesa payment", "details": response},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
         except Order.DoesNotExist:
             return Response(
-                {"error": "Order not found"},
+                {"detail": "Order not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            logger.error(f"Failed to create payment: {str(e)}")
             return Response(
-                {"error": f"Failed to create payment: {str(e)}"},
+                {"detail": f"Failed to create payment: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -185,20 +113,48 @@ class PaymentCallbackView(GenericAPIView):
                         break
             else:
                 payment.status = 'failed' if result_code == 1032 else 'cancelled'
+                payment.error_message = result_desc
 
             payment.save()
+            payment.sync_order_status()  # Sync with Order
             logger.info(f"Updated payment status to: {payment.status}")
             return Response({"ResultDesc": "Callback received successfully"}, status=status.HTTP_200_OK)
 
         except Payment.DoesNotExist:
             logger.error(f"Payment not found for CheckoutRequestID: {checkout_request_id}")
             return Response(
-                {"error": "Payment not found"},
+                {"detail": "Payment not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
             logger.error(f"Failed to process callback: {str(e)}")
             return Response(
-                {"error": f"Failed to process callback: {str(e)}"},
+                {"detail": f"Failed to process callback: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class PaymentStatusView(RetrieveAPIView):
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_admin:
+            return Payment.objects.all()
+        return Payment.objects.filter(order__customer=user)
+
+    def get(self, request, *args, **kwargs):
+        try:
+            return self.retrieve(request, *args, **kwargs)
+        except Payment.DoesNotExist:
+            return Response(
+                {"detail": "Payment not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Failed to fetch payment status: {str(e)}")
+            return Response(
+                {"detail": f"Failed to fetch payment status: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

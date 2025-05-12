@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Order, OrderItem
 from products.serializers import ProductSerializer
 from products.models import Product
+
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
     product_id = serializers.PrimaryKeyRelatedField(
@@ -11,7 +12,18 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = ['id', 'product', 'product_id', 'quantity', 'price']
-        read_only_fields = ['price']  # Make price read-only
+        read_only_fields = ['price']
+
+    def validate(self, data):
+        product = data['product']
+        quantity = data['quantity']
+        if quantity <= 0:
+            raise serializers.ValidationError("Quantity must be greater than zero.")
+        if quantity > product.stock:
+            raise serializers.ValidationError(
+                f"Insufficient stock for {product.name}. Available: {product.stock}, Requested: {quantity}"
+            )
+        return data
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
@@ -19,8 +31,21 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'total_amount', 'status', 'created_at', 'payment_phone_number','updated_at', 'items']
-        read_only_fields = ['total_amount', 'created_at', 'updated_at']
+        fields = [
+            'id', 'customer', 'total_amount', 'status', 'payment_status',
+            'payment_phone_number', 'created_at', 'updated_at', 'items'
+        ]
+        read_only_fields = ['total_amount', 'created_at', 'updated_at', 'payment_status']
+
+    def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError("Order must include at least one item.")
+        return value
+
+    def validate_payment_phone_number(self, value):
+        if value and not value.startswith('+2547') or len(value) != 12:
+            raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX.")
+        return value
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')
@@ -32,13 +57,15 @@ class OrderSerializer(serializers.ModelSerializer):
         for item_data in items_data:
             product = item_data['product']
             quantity = item_data['quantity']
-            price = product.price  # Use current product price
+            price = product.price
             OrderItem.objects.create(
                 order=order,
                 product=product,
                 quantity=quantity,
                 price=price
             )
+            product.stock -= quantity  # Reduce stock
+            product.save()
             total_amount += price * quantity
         order.total_amount = total_amount
         order.save()
