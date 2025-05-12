@@ -806,3 +806,51 @@ Not Found: /static/admin/css/login.css
 "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 404 179
 "GET /static/admin/css/responsive.css HTTP/1.1" 404 179
 "GET /static/admin/css/login.css HTTP/1.1" 404 179
+Unauthorized: /api/categories/3/
+"GET /api/categories/3/ HTTP/1.1" 401 183
+"POST /api/users/login/ HTTP/1.1" 200 607
+"GET /api/categories/3/ HTTP/1.1" 200 107
+"GET /api/categories/4/ HTTP/1.1" 200 107
+"GET /api/categories/5/ HTTP/1.1" 200 102
+"OPTIONS /api/products/ HTTP/1.1" 200 0
+"OPTIONS /api/categories/ HTTP/1.1" 200 0
+Unauthorized: /api/products/
+"GET /api/products/ HTTP/1.1" 401 183
+Unauthorized: /api/categories/
+"GET /api/categories/ HTTP/1.1" 401 183
+"OPTIONS /api/users/refresh/ HTTP/1.1" 200 0
+Not Found: /api/users/refresh/
+"OPTIONS /api/users/refresh/ HTTP/1.1" 200 0
+"POST /api/users/refresh/ HTTP/1.1" 404 179
+Not Found: /api/users/refresh/
+"POST /api/users/refresh/ HTTP/1.1" 404 179
+"OPTIONS /api/users/google/ HTTP/1.1" 200 0
+"POST /api/users/google/ HTTP/1.1" 200 622
+"GET /api/categories/ HTTP/1.1" 200 439
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/categories/ HTTP/1.1" 200 439
+"GET /api/categories/5/ HTTP/1.1" 200 102
+Unauthorized: /api/users/login/
+"POST /api/users/login/ HTTP/1.1" 401 31
+"POST /api/users/register/ HTTP/1.1" 201 626
+"GET /api/categories/5/ HTTP/1.1" 200 102
+"GET /api/categories/ HTTP/1.1" 200 439
+"OPTIONS /api/categories/6/ HTTP/1.1" 200 0
+Not Found: /api/categories/6/
+"GET /api/categories/6/ HTTP/1.1" 404 49
+"OPTIONS /api/categories/4/ HTTP/1.1" 200 0
+"GET /api/categories/4/ HTTP/1.1" 200 107
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\products\views.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/categories/4/
+"GET /api/categories/4/ HTTP/1.1" 400 45
+Bad Request: /api/categories/4/
+"GET /api/categories/4/ HTTP/1.1" 400 45
+Bad Request: /api/categories/4/
+"GET /api/categories/4/ HTTP/1.1" 400 45
+Bad Request: /api/categories/5/
+"GET /api/categories/5/ HTTP/1.1" 400 45
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\products\urls.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\products\urls.py changed, reloading.
+Watching for file changes with StatReloader

@@ -11,8 +11,8 @@ router = DefaultRouter()
 router.register(r'categories', CategoryViewSet, basename='category')
 
 urlpatterns = [
-    path('', include(router.urls)),  # Includes /categories/ and /categories/<id>/
     path('categories/<int:pk>/', CategoryDetailViewSet.as_view({'get': 'retrieve'}), name='category-detail'),
+    path('', include(router.urls)),  # Includes /categories/ and /categories/<id>/
     path('products/', ProductListView.as_view(), name='product-list'),
     path('products/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
     path('bulk-categories/', BulkCategoryCreateView.as_view(), name='bulk-category-create'),

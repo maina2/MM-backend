@@ -9,12 +9,15 @@ from .serializers import CategorySerializer, BranchSerializer, ProductSerializer
 from .permissions import IsAdminUser
 from rest_framework import viewsets
 
-# Existing views (unchanged)
-# ViewSet for Categories (list all categories)
+# ViewSet for Categories (list only)
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    http_method_names = ['get']  # Restrict to GET only for now
+    http_method_names = ['get']  # Restrict to GET
+
+    # Disable the retrieve action (we'll use CategoryDetailViewSet instead)
+    def retrieve(self, request, *args, **kwargs):
+        return Response({'error': 'Use /categories/<id>/ for details'}, status=400)
 
 # ViewSet for Category Details (including products under a category)
 class CategoryDetailViewSet(viewsets.ViewSet):
