@@ -307,3 +307,56 @@ Watching for file changes with StatReloader
 "GET /api/products/ HTTP/1.1" 200 5928
 "GET /api/categories/ HTTP/1.1" 200 558
 "GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/categories/ HTTP/1.1" 200 558
+"GET /api/products/ HTTP/1.1" 200 5928
+"OPTIONS /api/users/google/ HTTP/1.1" 200 0
+"POST /api/users/google/ HTTP/1.1" 200 622
+"OPTIONS /api/products/ HTTP/1.1" 200 0
+"OPTIONS /api/categories/ HTTP/1.1" 200 0
+"GET /api/categories/ HTTP/1.1" 200 558
+"GET /api/products/ HTTP/1.1" 200 5928
+Watching for file changes with StatReloader
+"OPTIONS /api/products/ HTTP/1.1" 200 0
+"OPTIONS /api/categories/ HTTP/1.1" 200 0
+Unauthorized: /api/products/
+Unauthorized: /api/categories/
+"GET /api/products/ HTTP/1.1" 401 183
+"GET /api/categories/ HTTP/1.1" 401 183
+"OPTIONS /api/users/refresh/ HTTP/1.1" 200 0
+"OPTIONS /api/users/refresh/ HTTP/1.1" 200 0
+Not Found: /api/users/refresh/
+"POST /api/users/refresh/ HTTP/1.1" 404 179
+Not Found: /api/users/refresh/
+"POST /api/users/refresh/ HTTP/1.1" 404 179
+"OPTIONS /api/users/google/ HTTP/1.1" 200 0
+"POST /api/users/google/ HTTP/1.1" 200 622
+"GET /api/categories/ HTTP/1.1" 200 558
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/products/ HTTP/1.1" 200 5928
+- Broken pipe from ('127.0.0.1', 62912)
+- Broken pipe from ('127.0.0.1', 62913)
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/products/ HTTP/1.1" 200 5928
+- Broken pipe from ('127.0.0.1', 62969)
+"GET /api/products/ HTTP/1.1" 200 5928
+- Broken pipe from ('127.0.0.1', 63760)
+- Broken pipe from ('127.0.0.1', 63990)
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/products/ HTTP/1.1" 200 5928
+"GET /api/products/ HTTP/1.1" 200 5928
+"OPTIONS /api/products/15/ HTTP/1.1" 200 0
+"GET /api/products/15/ HTTP/1.1" 200 380
+Unauthorized: /api/products/15/
+"GET /api/products/15/ HTTP/1.1" 401 183
+Not Found: /api/users/refresh/
+"POST /api/users/refresh/ HTTP/1.1" 404 179
+"POST /api/users/google/ HTTP/1.1" 200 622
+"GET /api/categories/ HTTP/1.1" 200 558
+"GET /api/products/ HTTP/1.1" 200 5928
+"OPTIONS /api/products/14/ HTTP/1.1" 200 0
+"GET /api/products/14/ HTTP/1.1" 200 389
