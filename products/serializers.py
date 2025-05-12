@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from .models import Category, Branch, Product
 
-class CategorySerializer(serializers.ModelSerializer):
+class CategorySerializer(serializers.ModelSerializer):  
+    image = serializers.CharField(allow_blank=True, required=False)
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description', 'created_at']
+        fields = ['id', 'name', 'description','image', 'created_at']
 
 class BranchSerializer(serializers.ModelSerializer):
     class Meta:
