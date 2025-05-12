@@ -101,6 +101,16 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 CORS_EXPOSE_HEADERS = ['authorization']
+# Static and media files
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
+# Remove STATICFILES_DIRS if you don't have a custom static/ directory
+# STATICFILES_DIRS = [
+#     BASE_DIR / "static",
+# ]
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # URL configuration
 ROOT_URLCONF = 'backend.urls'
