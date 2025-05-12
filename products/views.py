@@ -7,79 +7,34 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Category, Branch, Product
 from .serializers import CategorySerializer, BranchSerializer, ProductSerializer
 from .permissions import IsAdminUser
+from rest_framework import viewsets
 
 # Existing views (unchanged)
-class CategoryListView(GenericAPIView, ListModelMixin, CreateModelMixin):
+# ViewSet for Categories (list all categories)
+class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAdminUser]
+    http_method_names = ['get']  # Restrict to GET only for now
 
-    def get(self, request, *args, **kwargs):
+# ViewSet for Category Details (including products under a category)
+class CategoryDetailViewSet(viewsets.ViewSet):
+    def retrieve(self, request, pk=None):
         try:
-            categories = self.get_queryset()
-            serializer = self.get_serializer(categories, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to fetch categories: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            # Fetch the category by ID
+            category = Category.objects.get(pk=pk)
+            category_serializer = CategorySerializer(category)
 
-    def post(self, request, *args, **kwargs):
-        try:
-            serializer = self.get_serializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to create category: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            # Fetch products under this category
+            products = Product.objects.filter(category=category)
+            product_serializer = ProductSerializer(products, many=True)
 
-class CategoryDetailView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    lookup_field = 'id'
-    permission_classes = [IsAdminUser]
-
-    def get(self, request, id, *args, **kwargs):
-        try:
-            category = get_object_or_404(Category, id=id)
-            serializer = self.get_serializer(category)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to fetch category: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-    def put(self, request, id, *args, **kwargs):
-        try:
-            category = get_object_or_404(Category, id=id)
-            serializer = self.get_serializer(category, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to update category: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-    def delete(self, request, id, *args, **kwargs):
-        try:
-            category = get_object_or_404(Category, id=id)
-            category.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to delete category: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
+            # Combine category details and its products in the response
+            return Response({
+                'category': category_serializer.data,
+                'products': product_serializer.data
+            })
+        except Category.DoesNotExist:
+            return Response({'error': 'Category not found'}, status=404)
 class ProductListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer

@@ -1,12 +1,18 @@
-from django.urls import path
+from django.urls import path,include
 from .views import (
-    CategoryListView, CategoryDetailView, ProductListView, ProductDetailView,
+   CategoryViewSet, CategoryDetailViewSet, ProductListView, ProductDetailView,
     BulkCategoryCreateView, BulkBranchCreateView, BulkProductCreateView
 )
+from rest_framework.routers import DefaultRouter
+
+
+# Create a router for the CategoryViewSet
+router = DefaultRouter()
+router.register(r'categories', CategoryViewSet, basename='category')
 
 urlpatterns = [
-    path('categories/', CategoryListView.as_view(), name='category-list'),
-    path('categories/<int:id>/', CategoryDetailView.as_view(), name='category-detail'),
+    path('', include(router.urls)),  # Includes /categories/ and /categories/<id>/
+    path('categories/<int:pk>/', CategoryDetailViewSet.as_view({'get': 'retrieve'}), name='category-detail'),
     path('products/', ProductListView.as_view(), name='product-list'),
     path('products/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
     path('bulk-categories/', BulkCategoryCreateView.as_view(), name='bulk-category-create'),
