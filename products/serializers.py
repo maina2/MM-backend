@@ -1,11 +1,22 @@
 from rest_framework import serializers
 from .models import Category, Branch, Product
 
-class CategorySerializer(serializers.ModelSerializer):  
-    image = serializers.CharField(allow_blank=True, required=False)
+from rest_framework import serializers
+from .models import Category
+
+class CategorySerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description','image', 'created_at']
+        fields = ['id', 'name', 'description', 'image', 'created_at']
+
+    def get_image(self, obj):
+        if obj.image:
+            full_url = obj.image.url
+            print(f"Category: {obj.name}, Public ID: {obj.image}, Full URL: {full_url}")
+            return full_url
+        return None
 
 class BranchSerializer(serializers.ModelSerializer):
     class Meta:
