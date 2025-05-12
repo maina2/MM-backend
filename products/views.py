@@ -14,7 +14,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     http_method_names = ['get']  # Restrict to GET
-
+    pagination_class = None
     # Disable the retrieve action (we'll use CategoryDetailViewSet instead)
     def retrieve(self, request, *args, **kwargs):
         return Response({'error': 'Use /categories/<id>/ for details'}, status=400)

@@ -12,4 +12,7 @@ urlpatterns = [
     path('api/delivery/', include('delivery.urls')), 
     path('api/payment/', include('payment.urls')), 
     
-    ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
