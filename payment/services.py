@@ -1,6 +1,6 @@
 import requests
 import base64
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 import logging
 from django.conf import settings
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
@@ -30,13 +30,20 @@ class MpesaService:
         credentials = base64.b64encode(f"{self.consumer_key}:{self.consumer_secret}".encode()).decode()
         headers = {"Authorization": f"Basic {credentials}"}
         logger.info("Requesting M-Pesa access token")
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        self.access_token = data.get('access_token')
-        self.token_expiry = datetime.now() + timedelta(seconds=int(data.get('expires_in', 3600)) - 300)
-        logger.info("M-Pesa access token obtained successfully")
-        return self.access_token
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            self.access_token = data.get('access_token')
+            self.token_expiry = datetime.now() + timedelta(seconds=int(data.get('expires_in', 3600)) - 300)
+            logger.info("M-Pesa access token obtained successfully")
+            return self.access_token
+        except requests.HTTPError as e:
+            logger.error(f"Failed to get access token: {e}, Status: {e.response.status_code}, Response: {e.response.text}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in get_access_token: {str(e)}")
+            raise
 
     def generate_password(self, timestamp):
         data_to_encode = f"{self.shortcode}{self.passkey}{timestamp}"
@@ -61,7 +68,7 @@ class MpesaService:
             "Password": password,
             "Timestamp": timestamp,
             "TransactionType": "CustomerPayBillOnline",
-            "Amount": str(int(amount)),
+            "Amount": str(int(float(amount))),  # Ensure integer amount
             "PartyA": phone_number,
             "PartyB": self.shortcode,
             "PhoneNumber": phone_number,
@@ -69,9 +76,16 @@ class MpesaService:
             "AccountReference": account_reference,
             "TransactionDesc": transaction_desc
         }
-        logger.info(f"Initiating STK Push for {phone_number}, amount: {amount}")
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        logger.info(f"STK Push response: {data}")
-        return data
+        logger.info(f"Initiating STK Push for {phone_number}, amount: {amount}, payload: {payload}")
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"STK Push response: {data}")
+            return data
+        except requests.HTTPError as e:
+            logger.error(f"Failed to initiate STK Push: {e}, Status: {e.response.status_code}, Response: {e.response.text}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in stk_push: {str(e)}")
+            raise

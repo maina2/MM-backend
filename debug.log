@@ -1766,3 +1766,19 @@ Internal Server Error: /api/payments/
 "POST /api/payments/ HTTP/1.1" 500 282
 C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\payment\serializers.py changed, reloading.
 Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Internal Server Error: /api/payments/
+"POST /api/payments/ HTTP/1.1" 500 94
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\settings.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\settings.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 108
+Internal Server Error: /api/payments/
+"POST /api/payments/ HTTP/1.1" 500 108
+Watching for file changes with StatReloader
+Internal Server Error: /api/payments/
+"POST /api/payments/ HTTP/1.1" 500 108
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\payment\services.py changed, reloading.
+Watching for file changes with StatReloader
