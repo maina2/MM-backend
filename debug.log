@@ -1656,3 +1656,28 @@ Not Found: /.well-known/appspecific/com.chrome.devtools.json
 Not Found: /favicon.ico
 "GET /favicon.ico HTTP/1.1" 404 3136
 "POST /api/users/login/ HTTP/1.1" 200 626
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\urls.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\urls.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\urls.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\urls.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/orders/orders-list/
+"POST /api/orders/orders-list/ HTTP/1.1" 400 119
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Internal Server Error: /api/orders/orders-list/
+"POST /api/orders/orders-list/ HTTP/1.1" 500 262
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/orders/orders-list/
+"POST /api/orders/orders-list/ HTTP/1.1" 400 119
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/orders/orders-list/
+"POST /api/orders/orders-list/ HTTP/1.1" 400 119
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.

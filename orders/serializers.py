@@ -43,8 +43,15 @@ class OrderSerializer(serializers.ModelSerializer):
         return value
 
     def validate_payment_phone_number(self, value):
-        if value and not value.startswith('+2547') or len(value) != 12:
-            raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX.")
+        if value:
+            # Remove any whitespace or non-digit characters
+            value = value.strip()
+            # Normalize: Add + if missing
+            if value.startswith('2547') and len(value) == 12:
+                value = f'+{value}'
+            elif not (value.startswith('+2547') and len(value) == 13):
+                raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX or 2547XXXXXXXX.")
+            return value
         return value
 
     def create(self, validated_data):
@@ -64,7 +71,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 quantity=quantity,
                 price=price
             )
-            product.stock -= quantity  # Reduce stock
+            product.stock -= quantity
             product.save()
             total_amount += price * quantity
         order.total_amount = total_amount
