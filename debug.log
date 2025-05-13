@@ -1782,3 +1782,11 @@ Internal Server Error: /api/payments/
 "POST /api/payments/ HTTP/1.1" 500 108
 C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\payment\services.py changed, reloading.
 Watching for file changes with StatReloader
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 108
+Internal Server Error: /api/payments/
+"POST /api/payments/ HTTP/1.1" 500 108
+Internal Server Error: /api/payments/
+"POST /api/payments/ HTTP/1.1" 500 108
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 108
