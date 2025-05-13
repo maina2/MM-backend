@@ -1734,3 +1734,35 @@ Watching for file changes with StatReloader
 Watching for file changes with StatReloader
 "POST /api/orders/orders-list/ HTTP/1.1" 201 735
 "POST /api/orders/orders-list/ HTTP/1.1" 201 1189
+Watching for file changes with StatReloader
+Bad Request: /api/payments/
+Bad Request: /api/payments/
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 117
+"POST /api/payments/ HTTP/1.1" 400 117
+"POST /api/payments/ HTTP/1.1" 400 117
+Bad Request: /api/payments/
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 117
+"POST /api/payments/ HTTP/1.1" 400 117
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 117
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 117
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 117
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 117
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 113
+Bad Request: /api/payments/
+"POST /api/payments/ HTTP/1.1" 400 113
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\payment\models.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\payment\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Internal Server Error: /api/payments/
+"POST /api/payments/ HTTP/1.1" 500 282
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\payment\serializers.py changed, reloading.
+Watching for file changes with StatReloader

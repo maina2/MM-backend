@@ -27,11 +27,20 @@ class PaymentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A payment already exists for this order.")
         if order.payment_status != 'unpaid':
             raise serializers.ValidationError("Order already has a payment status.")
-        if not phone_number.startswith('+2547') or len(phone_number) != 12:
-            raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX.")
+        # Normalize phone_number
+        phone_number = phone_number.strip()
+        if phone_number.startswith('2547') and len(phone_number) == 12:
+            data['phone_number'] = f'+{phone_number}'
+        elif not (phone_number.startswith('+2547') and len(phone_number) == 13):
+            raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX or 2547XXXXXXXX.")
         return data
 
     def validate_order_id(self, value):
         if value.customer != self.context['request'].user:
             raise serializers.ValidationError("You can only create payments for your own orders.")
         return value
+
+    def create(self, validated_data):
+        # Set amount from order.total_amount
+        validated_data['amount'] = validated_data['order'].total_amount
+        return super().create(validated_data)
