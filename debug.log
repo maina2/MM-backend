@@ -1702,3 +1702,33 @@ Watching for file changes with StatReloader
 C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.
 Watching for file changes with StatReloader
 Watching for file changes with StatReloader
+Unauthorized: /api/orders/orders-list/
+"POST /api/orders/orders-list/ HTTP/1.1" 401 183
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\backend\settings.py changed, reloading.
+Watching for file changes with StatReloader
+"POST /api/users/login/ HTTP/1.1" 200 626
+"POST /api/orders/orders-list/ HTTP/1.1" 201 1195
+Bad Request: /api/orders/orders-list/
+"POST /api/orders/orders-list/ HTTP/1.1" 400 105
+"GET /api/orders/orders-list/ HTTP/1.1" 200 3571
+Not Found: /api/orders/orders-list/1/
+"GET /api/orders/orders-list/1/ HTTP/1.1" 404 8081
+Not Found: /api/orders/orders-detail/1/
+"GET /api/orders/orders-detail/1/ HTTP/1.1" 404 8087
+"GET /api/orders/orders-details/1/ HTTP/1.1" 200 1161
+"POST /api/users/register/ HTTP/1.1" 201 612
+Internal Server Error: /api/orders/orders-details/1/
+"GET /api/orders/orders-details/1/ HTTP/1.1" 500 69
+Method Not Allowed: /api/orders/orders-details/1/
+"POST /api/orders/orders-details/1/ HTTP/1.1" 405 41
+Method Not Allowed: /api/orders/orders-details/1/
+"POST /api/orders/orders-details/1/ HTTP/1.1" 405 41
+Not Found: /api/orders/orders-list/1/
+"POST /api/orders/orders-list/1/ HTTP/1.1" 404 8082
+Bad Request: /api/orders/orders-list/
+"POST /api/orders/orders-list/ HTTP/1.1" 400 105
+Bad Request: /api/orders/orders-list/
+"POST /api/orders/orders-list/ HTTP/1.1" 400 83
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader

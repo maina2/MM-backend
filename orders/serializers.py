@@ -29,7 +29,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
     customer = serializers.StringRelatedField(read_only=True)
-    request_id = serializers.CharField(required=True, max_length=36)
+    request_id = serializers.CharField(required=False, max_length=36, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Order
@@ -55,13 +55,20 @@ class OrderSerializer(serializers.ModelSerializer):
         return value
 
     def validate_request_id(self, value):
-        try:
-            uuid.UUID(value)  # Validate UUID format
-        except ValueError:
-            raise serializers.ValidationError("request_id must be a valid UUID.")
-        if Order.objects.filter(request_id=value).exists():
-            raise serializers.ValidationError("An order with this request_id already exists.")
+        if value:
+            try:
+                uuid.UUID(value)  # Validate UUID format
+            except ValueError:
+                raise serializers.ValidationError("request_id must be a valid UUID.")
+            if Order.objects.filter(request_id=value).exists():
+                raise serializers.ValidationError("An order with this request_id already exists.")
         return value
+
+    def validate(self, data):
+        # Generate request_id if not provided
+        if 'request_id' not in data or data['request_id'] is None:
+            data['request_id'] = str(uuid.uuid4())
+        return data
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')
