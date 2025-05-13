@@ -1732,3 +1732,5 @@ Bad Request: /api/orders/orders-list/
 C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.
 Watching for file changes with StatReloader
 Watching for file changes with StatReloader
+"POST /api/orders/orders-list/ HTTP/1.1" 201 735
+"POST /api/orders/orders-list/ HTTP/1.1" 201 1189
