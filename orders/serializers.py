@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import Order, OrderItem
 from products.serializers import ProductSerializer
 from products.models import Product
-import uuid
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
@@ -29,7 +28,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
     customer = serializers.StringRelatedField(read_only=True)
-    request_id = serializers.CharField(required=False, max_length=36, allow_blank=True, allow_null=True)
+    request_id = serializers.CharField(read_only=True)  # Changed to read_only
 
     class Meta:
         model = Order
@@ -37,7 +36,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'id', 'customer', 'total_amount', 'status', 'payment_status',
             'payment_phone_number', 'created_at', 'updated_at', 'items', 'request_id'
         ]
-        read_only_fields = ['total_amount', 'created_at', 'updated_at', 'payment_status']
+        read_only_fields = ['total_amount', 'created_at', 'updated_at', 'payment_status', 'request_id']
 
     def validate_items(self, value):
         if not value:
@@ -53,22 +52,6 @@ class OrderSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX or 2547XXXXXXXX.")
             return value
         return value
-
-    def validate_request_id(self, value):
-        if value:
-            try:
-                uuid.UUID(value)  # Validate UUID format
-            except ValueError:
-                raise serializers.ValidationError("request_id must be a valid UUID.")
-            if Order.objects.filter(request_id=value).exists():
-                raise serializers.ValidationError("An order with this request_id already exists.")
-        return value
-
-    def validate(self, data):
-        # Generate request_id if not provided
-        if 'request_id' not in data or data['request_id'] is None:
-            data['request_id'] = str(uuid.uuid4())
-        return data
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')

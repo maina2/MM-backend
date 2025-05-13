@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from products.models import Product
+import uuid
 
 User = get_user_model()
 
@@ -45,8 +46,9 @@ class Order(models.Model):
     request_id = models.CharField(
         max_length=36,
         unique=True,
-        null=True,
-        blank=True,
+        null=False,  # Changed from null=True to ensure request_id is always set
+        blank=True,  # Allowing blank for form validation, but will be filled in save()
+        default='',  # Default empty string instead of None
         help_text='Unique ID for the order request to prevent duplicates.'
     )
 
@@ -58,6 +60,10 @@ class Order(models.Model):
             self.payment_phone_number = f'+{self.payment_phone_number}'
 
     def save(self, *args, **kwargs):
+        # Generate a new request_id if not provided
+        if not self.request_id:
+            self.request_id = str(uuid.uuid4())
+        
         self.clean()
         super().save(*args, **kwargs)
 
