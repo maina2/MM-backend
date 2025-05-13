@@ -44,9 +44,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def validate_payment_phone_number(self, value):
         if value:
-            # Remove any whitespace or non-digit characters
             value = value.strip()
-            # Normalize: Add + if missing
             if value.startswith('2547') and len(value) == 12:
                 value = f'+{value}'
             elif not (value.startswith('+2547') and len(value) == 13):

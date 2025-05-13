@@ -16,8 +16,8 @@ class Order(models.Model):
         blank=True,
         validators=[
             RegexValidator(
-                regex=r'^\+2547[0-9]{8}$',
-                message='Phone number must be in the format +2547XXXXXXXX.'
+                regex=r'^\+?2547[0-9]{8}$',
+                message='Phone number must be in the format +2547XXXXXXXX or 2547XXXXXXXX.'
             )
         ]
     )
@@ -45,6 +45,16 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order {self.id} by {self.customer.username}"
+
+    def clean(self):
+        """Normalize payment_phone_number to include + prefix."""
+        if self.payment_phone_number and self.payment_phone_number.startswith('2547'):
+            self.payment_phone_number = f'+{self.payment_phone_number}'
+
+    def save(self, *args, **kwargs):
+        """Ensure clean is called before saving."""
+        self.clean()
+        super().save(*args, **kwargs)
 
     def recalculate_total(self):
         """Recalculate total_amount based on OrderItems."""
