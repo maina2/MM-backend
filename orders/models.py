@@ -42,22 +42,26 @@ class Order(models.Model):
         ],
         default='unpaid'
     )
+    request_id = models.CharField(
+        max_length=36,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text='Unique ID for the order request to prevent duplicates.'
+    )
 
     def __str__(self):
         return f"Order {self.id} by {self.customer.username}"
 
     def clean(self):
-        """Normalize payment_phone_number to include + prefix."""
         if self.payment_phone_number and self.payment_phone_number.startswith('2547'):
             self.payment_phone_number = f'+{self.payment_phone_number}'
 
     def save(self, *args, **kwargs):
-        """Ensure clean is called before saving."""
         self.clean()
         super().save(*args, **kwargs)
 
     def recalculate_total(self):
-        """Recalculate total_amount based on OrderItems."""
         total = sum(item.price * item.quantity for item in self.items.all())
         self.total_amount = total
         self.save()
@@ -68,6 +72,7 @@ class Order(models.Model):
             models.Index(fields=['customer']),
             models.Index(fields=['status']),
             models.Index(fields=['payment_status']),
+            models.Index(fields=['request_id']),
         ]
 
 class OrderItem(models.Model):

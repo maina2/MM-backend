@@ -1692,3 +1692,12 @@ C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJE
 Watching for file changes with StatReloader
 C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.
 Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+"POST /api/orders/orders-list/ HTTP/1.1" 201 1143
+Not Found: /api/orders/orders-list/1/
+"GET /api/orders/orders-list/1/ HTTP/1.1" 404 8081
+"POST /api/orders/orders-list/ HTTP/1.1" 201 1143
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\models.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Administrator\OneDrive\Documents\STUDIES\PERSONAL\WEB DEVELOPMENT\PROJECTS\Muindi-Mwesi-app\MM-backend\orders\serializers.py changed, reloading.
+Watching for file changes with StatReloader

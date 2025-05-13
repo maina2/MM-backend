@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Order, OrderItem
 from products.serializers import ProductSerializer
 from products.models import Product
+import uuid
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
@@ -28,12 +29,13 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
     customer = serializers.StringRelatedField(read_only=True)
+    request_id = serializers.CharField(required=True, max_length=36)
 
     class Meta:
         model = Order
         fields = [
             'id', 'customer', 'total_amount', 'status', 'payment_status',
-            'payment_phone_number', 'created_at', 'updated_at', 'items'
+            'payment_phone_number', 'created_at', 'updated_at', 'items', 'request_id'
         ]
         read_only_fields = ['total_amount', 'created_at', 'updated_at', 'payment_status']
 
@@ -50,6 +52,15 @@ class OrderSerializer(serializers.ModelSerializer):
             elif not (value.startswith('+2547') and len(value) == 13):
                 raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX or 2547XXXXXXXX.")
             return value
+        return value
+
+    def validate_request_id(self, value):
+        try:
+            uuid.UUID(value)  # Validate UUID format
+        except ValueError:
+            raise serializers.ValidationError("request_id must be a valid UUID.")
+        if Order.objects.filter(request_id=value).exists():
+            raise serializers.ValidationError("An order with this request_id already exists.")
         return value
 
     def create(self, validated_data):
