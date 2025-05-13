@@ -9,7 +9,7 @@ from orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer
 from django.conf import settings
-from . import MpesaService
+from .services import MpesaService
 import logging
 
 logger = logging.getLogger(__name__)
