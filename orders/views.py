@@ -10,7 +10,7 @@ from .serializers import OrderSerializer
 import logging
 from django.db import transaction
 from orders.models import Order, OrderItem
-from orders.serializers import OrderSerializer
+from orders.serializers import OrderSerializer,CheckoutSerializer
 from delivery.serializers import DeliverySerializer
 from rest_framework.views import APIView
 from payment.models import Payment  # Import Payment model
