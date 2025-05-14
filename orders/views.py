@@ -152,6 +152,60 @@ class CheckoutView(APIView):
         except Exception as e:
             logger.error(f"Checkout failed for user {request.user.username}: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+class PaymentCallbackView(GenericAPIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            logger.debug(f"Received M-Pesa callback: {request.data}")
+            
+            body = request.data.get('Body', {})
+            stk_callback = body.get('stkCallback', {})
+            checkout_request_id = stk_callback.get('CheckoutRequestID')
+            result_code = stk_callback.get('ResultCode')
+            result_desc = stk_callback.get('ResultDesc')
+
+            logger.info(f"Processing callback with CheckoutRequestID: {checkout_request_id}, Result: {result_code}")
+
+            try:
+                payment = Payment.objects.get(checkout_request_id=checkout_request_id)
+                logger.info(f"Found payment: {payment.id} for order: {payment.order.id}")
+            except Payment.DoesNotExist:
+                logger.error(f"Payment not found for CheckoutRequestID: {checkout_request_id}")
+                return Response(
+                    {"detail": "Payment not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if result_code == 0:
+                payment.status = 'successful'
+                callback_metadata = stk_callback.get('CallbackMetadata', {}).get('Item', [])
+                
+                # Log all metadata for debugging
+                logger.debug(f"Callback metadata: {callback_metadata}")
+                
+                for item in callback_metadata:
+                    if item.get('Name') == 'MpesaReceiptNumber':
+                        payment.transaction_id = item.get('Value')
+                        logger.info(f"Found transaction ID: {payment.transaction_id}")
+                        break
+            else:
+                payment.status = 'failed' if result_code == 1032 else 'cancelled'
+                payment.error_message = result_desc
+                logger.warning(f"Payment failed/cancelled: {result_desc}")
+
+            payment.save()
+            payment.sync_order_status()  # Sync with Order
+            logger.info(f"Updated payment status to: {payment.status}")
+            return Response({"ResultDesc": "Callback received successfully"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Failed to process callback: {str(e)}")
+            logger.error(traceback.format_exc())
+            return Response(
+                {"detail": f"Failed to process callback: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
