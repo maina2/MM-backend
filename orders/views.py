@@ -7,7 +7,135 @@ from rest_framework.pagination import PageNumberPagination
 from products.permissions import IsAdminUser
 from .models import Order
 from .serializers import OrderSerializer
+import logging
+from django.utils import timezone
+from django.db import transaction
+from orders.models import Order, OrderItem
+from delivery.models import Delivery
+from orders.serializers import OrderSerializer
+from delivery.serializers import DeliverySerializer
+from users.models import CustomUser
+from rest_framework.views import APIView
 
+logger = logging.getLogger(__name__)
+
+
+class CheckoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        try:
+            user = request.user
+            data = request.data
+
+            # Step 1: Validate cart items
+            cart_items = data.get('cart_items', [])
+            if not cart_items:
+                return Response({"error": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Calculate total amount
+            total_amount = 0
+            for item in cart_items:
+                price = float(item['product']['price'])
+                quantity = int(item['quantity'])
+                total_amount += price * quantity
+
+            # Step 2: Create the order
+            order_data = {
+                'customer': user,
+                'total_amount': str(total_amount),
+                'status': 'pending',
+                'payment_status': 'pending',
+                'payment_phone_number': data.get('phone_number'),
+            }
+            order = Order.objects.create(**order_data)
+            logger.info(f"Order created: ID {order.id} for user {user.username}")
+
+            # Step 3: Add order items
+            for item in cart_items:
+                OrderItem.objects.create(
+                    order=order,
+                    product_id=item['product']['id'],
+                    quantity=item['quantity'],
+                    price=item['product']['price']
+                )
+
+            # Step 4: Initiate payment (Africa's Talking M-Pesa)
+            phone_number = data.get('phone_number')
+            if not phone_number:
+                return Response({"error": "Phone number is required for payment"}, status=status.HTTP_400_BAD_REQUEST)
+
+            payment_response = self.initiate_mpesa_payment(
+                phone_number=phone_number,
+                amount=total_amount,
+                order_id=order.id
+            )
+            if payment_response.get('status') != 'success':
+                order.status = 'cancelled'
+                order.save()
+                return Response({"error": "Payment initiation failed", "details": payment_response.get('error')}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Update order with payment details
+            order.payment_status = 'pending'  # Will be updated via callback
+            order.request_id = payment_response.get('request_id')
+            order.status = 'processing'
+            order.save()
+
+            # Step 5: Create the delivery
+            delivery_data = {
+                'order': order,
+                'latitude': data.get('latitude'),
+                'longitude': data.get('longitude'),
+            }
+            delivery_serializer = DeliverySerializer(data=delivery_data)
+            delivery_serializer.is_valid(raise_exception=True)
+            delivery = delivery_serializer.save()
+            logger.info(f"Delivery created: ID {delivery.id} for Order {order.id}")
+
+            # Step 6: Serialize the response
+            order_serializer = OrderSerializer(order)
+            return Response({
+                "order": order_serializer.data,
+                "delivery_id": delivery.id,
+                "payment_status": "pending",
+                "message": "Checkout initiated. Please complete the payment on your phone."
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Checkout failed for user {request.user.username}: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def initiate_mpesa_payment(self, phone_number, amount, order_id):
+        # Africa's Talking M-Pesa STK Push
+        import africastalking
+
+        # Initialize Africa's Talking with your credentials
+        africastalking.initialize(
+            username='YOUR_AT_USERNAME',  # Replace with your Africa's Talking username
+            api_key='YOUR_AT_API_KEY'     # Replace with your Africa's Talking API key
+        )
+        payment = africastalking.Payment
+
+        try:
+            # Format phone number (e.g., +254712345678)
+            if not phone_number.startswith('+'):
+                phone_number = '+254' + phone_number.lstrip('0')
+
+            # Initiate STK push
+            response = payment.mobile_checkout(
+                product_name='YOUR_PRODUCT_NAME',  # Replace with your Africa's Talking product name
+                phone_number=phone_number,
+                currency_code='KES',
+                amount=amount,
+                metadata={'order_id': str(order_id)}
+            )
+            logger.info(f"M-Pesa payment initiated for order {order_id}: {response}")
+            return {"status": "success", "request_id": response['transactionId']}
+
+        except Exception as e:
+            logger.error(f"M-Pesa payment initiation failed for order {order_id}: {str(e)}")
+            return {"status": "failed", "error": str(e)}
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
