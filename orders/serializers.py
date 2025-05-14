@@ -76,3 +76,40 @@ class OrderSerializer(serializers.ModelSerializer):
         order.total_amount = total_amount
         order.save()
         return order
+    
+
+class CartItemSerializer(serializers.Serializer):
+    product = serializers.DictField()
+    quantity = serializers.IntegerField(min_value=1)
+
+    def validate_product(self, value):
+        product_id = value.get('id')
+        price = value.get('price')
+        if not product_id or not price:
+            raise serializers.ValidationError("Product must include 'id' and 'price'.")
+        try:
+            product = Product.objects.get(id=product_id)
+            if float(price) != float(product.price):
+                raise serializers.ValidationError("Product price does not match current price.")
+        except Product.DoesNotExist:
+            raise serializers.ValidationError(f"Product with id {product_id} does not exist.")
+        return value
+
+class CheckoutSerializer(serializers.Serializer):
+    cart_items = serializers.ListField(child=CartItemSerializer(), min_length=1)
+    phone_number = serializers.CharField(max_length=15)
+    latitude = serializers.FloatField()
+    longitude = serializers.FloatField()
+
+    def validate_phone_number(self, value):
+        value = value.strip()
+        if value.startswith('2547') and len(value) == 12:
+            value = f'+{value}'
+        elif not (value.startswith('+2547') and len(value) == 13):
+            raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX or 2547XXXXXXXX.")
+        return value
+
+    def validate_cart_items(self, value):
+        if not value:
+            raise serializers.ValidationError("Cart cannot be empty.")
+        return value

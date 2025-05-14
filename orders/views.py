@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 from payment.models import Payment  # Import Payment model
 from payment.services import MpesaService
 from django.conf import settings
+import traceback
 
 
 logger = logging.getLogger(__name__)
@@ -28,31 +29,36 @@ class CheckoutView(APIView):
     def post(self, request):
         try:
             user = request.user
-            data = request.data
+            # Step 1: Validate input data
+            serializer = CheckoutSerializer(data=request.data)
+            if not serializer.is_valid():
+                logger.error(f"Validation failed: {serializer.errors}")
+                return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Step 1: Validate cart items
-            cart_items = data.get('cart_items', [])
-            if not cart_items:
-                return Response({"error": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
+            validated_data = serializer.validated_data
+            cart_items = validated_data['cart_items']
+            phone_number = validated_data['phone_number']
+            latitude = validated_data['latitude']
+            longitude = validated_data['longitude']
 
-            # Calculate total amount
+            # Step 2: Calculate total amount
             total_amount = 0
             for item in cart_items:
                 price = float(item['product']['price'])
                 quantity = int(item['quantity'])
                 total_amount += price * quantity
 
-            # Step 2: Create the order
-            order_data = {
-                'customer': user,
-                'total_amount': str(total_amount),
-                'status': 'pending',
-                'payment_status': 'unpaid',  # Initial status
-            }
-            order = Order.objects.create(**order_data)
+            # Step 3: Create the order
+            order = Order.objects.create(
+                customer=user,
+                total_amount=total_amount,
+                status='pending',
+                payment_status='pending',
+                payment_phone_number=phone_number
+            )
             logger.info(f"Order created: ID {order.id} for user {user.username}")
 
-            # Step 3: Add order items
+            # Step 4: Add order items
             for item in cart_items:
                 OrderItem.objects.create(
                     order=order,
@@ -61,12 +67,7 @@ class CheckoutView(APIView):
                     price=item['product']['price']
                 )
 
-            # Step 4: Initiate M-Pesa payment using MpesaService
-            phone_number = data.get('phone_number')
-            if not phone_number:
-                return Response({"error": "Phone number is required for payment"}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Create a Payment record
+            # Step 5: Initiate M-Pesa payment
             payment = Payment.objects.create(
                 order=order,
                 amount=total_amount,
@@ -75,7 +76,6 @@ class CheckoutView(APIView):
             )
             logger.info(f"Payment record created: ID {payment.id} for Order {order.id}")
 
-            # Initiate STK push
             mpesa_service = MpesaService()
             callback_url = getattr(settings, 'MPESA_CALLBACK_URL', None)
             if not callback_url:
@@ -129,18 +129,20 @@ class CheckoutView(APIView):
                     status=status.HTTP_502_BAD_GATEWAY
                 )
 
-            # Step 5: Create the delivery
+            # Step 6: Create the delivery
             delivery_data = {
-                'order': order,
-                'latitude': data.get('latitude'),
-                'longitude': data.get('longitude'),
+                'order': order.id,
+                'latitude': latitude,
+                'longitude': longitude,
             }
             delivery_serializer = DeliverySerializer(data=delivery_data)
-            delivery_serializer.is_valid(raise_exception=True)
+            if not delivery_serializer.is_valid():
+                logger.error(f"Delivery validation failed: {delivery_serializer.errors}")
+                return Response({"error": delivery_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             delivery = delivery_serializer.save()
             logger.info(f"Delivery created: ID {delivery.id} for Order {order.id}")
 
-            # Step 6: Serialize the response
+            # Step 7: Serialize the response
             order_serializer = OrderSerializer(order)
             return Response({
                 "order": order_serializer.data,
@@ -152,7 +154,6 @@ class CheckoutView(APIView):
         except Exception as e:
             logger.error(f"Checkout failed for user {request.user.username}: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
 class PaymentCallbackView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         try:
