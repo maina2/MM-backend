@@ -136,6 +136,41 @@ class CheckoutView(APIView):
         except Exception as e:
             logger.error(f"M-Pesa payment initiation failed for order {order_id}: {str(e)}")
             return {"status": "failed", "error": str(e)}
+        
+
+class PaymentCallbackView(APIView):
+    def post(self, request):
+        try:
+            data = request.data
+            logger.info(f"Payment callback received: {data}")
+
+            # Extract payment details
+            transaction_id = data.get('transactionId')
+            status = data.get('status')  # e.g., "Success" or "Failed"
+            order_id = data.get('metadata', {}).get('order_id')
+
+            if not order_id or not transaction_id:
+                return Response({"error": "Invalid callback data"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Update the order
+            order = Order.objects.get(id=order_id)
+            if status == "Success":
+                order.payment_status = 'successful'
+                order.status = 'processing'
+            else:
+                order.payment_status = 'failed'
+                order.status = 'cancelled'
+            order.save()
+
+            logger.info(f"Order {order_id} payment updated: {order.payment_status}")
+            return Response({"status": "success"}, status=status.HTTP_200_OK)
+
+        except Order.DoesNotExist:
+            logger.error(f"Order {order_id} not found in payment callback")
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Payment callback processing failed: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
