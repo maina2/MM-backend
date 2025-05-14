@@ -17,10 +17,34 @@ from payment.models import Payment  # Import Payment model
 from payment.services import MpesaService
 from django.conf import settings
 import traceback
+from rest_framework import serializers
 
 
 logger = logging.getLogger(__name__)
 
+
+class CheckoutSerializer(serializers.Serializer):
+    cart_items = serializers.ListField(child=serializers.DictField(), min_length=1)
+    phone_number = serializers.CharField(max_length=15)
+    latitude = serializers.FloatField()
+    longitude = serializers.FloatField()
+
+    def validate_phone_number(self, value):
+        value = value.strip()
+        if value.startswith('2547') and len(value) == 12:
+            value = f'+{value}'
+        elif not (value.startswith('+2547') and len(value) == 13):
+            raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX or 2547XXXXXXXX.")
+        return value
+
+    def validate_cart_items(self, value):
+        for item in value:
+            product = item.get('product', {})
+            if not product.get('id') or not product.get('price'):
+                raise serializers.ValidationError("Each cart item must include product 'id' and 'price'.")
+            if not isinstance(item.get('quantity'), int) or item['quantity'] < 1:
+                raise serializers.ValidationError("Quantity must be a positive integer.")
+        return value
 
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -29,6 +53,8 @@ class CheckoutView(APIView):
     def post(self, request):
         try:
             user = request.user
+            logger.info(f"Received request data: {request.data}")
+
             # Step 1: Validate input data
             serializer = CheckoutSerializer(data=request.data)
             if not serializer.is_valid():
@@ -131,7 +157,7 @@ class CheckoutView(APIView):
 
             # Step 6: Create the delivery
             delivery_data = {
-                'order': order.id,
+                'order_id': order.id,  # Changed from 'order' to 'order_id'
                 'latitude': latitude,
                 'longitude': longitude,
             }
