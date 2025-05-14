@@ -8,14 +8,15 @@ from products.permissions import IsAdminUser
 from .models import Order
 from .serializers import OrderSerializer
 import logging
-from django.utils import timezone
 from django.db import transaction
 from orders.models import Order, OrderItem
-from delivery.models import Delivery
 from orders.serializers import OrderSerializer
 from delivery.serializers import DeliverySerializer
-from users.models import CustomUser
 from rest_framework.views import APIView
+from payment.models import Payment  # Import Payment model
+from payment.services import MpesaService
+from django.conf import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +47,7 @@ class CheckoutView(APIView):
                 'customer': user,
                 'total_amount': str(total_amount),
                 'status': 'pending',
-                'payment_status': 'pending',
-                'payment_phone_number': data.get('phone_number'),
+                'payment_status': 'unpaid',  # Initial status
             }
             order = Order.objects.create(**order_data)
             logger.info(f"Order created: ID {order.id} for user {user.username}")
@@ -61,26 +61,73 @@ class CheckoutView(APIView):
                     price=item['product']['price']
                 )
 
-            # Step 4: Initiate payment (Africa's Talking M-Pesa)
+            # Step 4: Initiate M-Pesa payment using MpesaService
             phone_number = data.get('phone_number')
             if not phone_number:
                 return Response({"error": "Phone number is required for payment"}, status=status.HTTP_400_BAD_REQUEST)
 
-            payment_response = self.initiate_mpesa_payment(
-                phone_number=phone_number,
+            # Create a Payment record
+            payment = Payment.objects.create(
+                order=order,
                 amount=total_amount,
-                order_id=order.id
+                phone_number=phone_number,
+                status='pending'
             )
-            if payment_response.get('status') != 'success':
-                order.status = 'cancelled'
-                order.save()
-                return Response({"error": "Payment initiation failed", "details": payment_response.get('error')}, status=status.HTTP_400_BAD_REQUEST)
+            logger.info(f"Payment record created: ID {payment.id} for Order {order.id}")
 
-            # Update order with payment details
-            order.payment_status = 'pending'  # Will be updated via callback
-            order.request_id = payment_response.get('request_id')
-            order.status = 'processing'
-            order.save()
+            # Initiate STK push
+            mpesa_service = MpesaService()
+            callback_url = getattr(settings, 'MPESA_CALLBACK_URL', None)
+            if not callback_url:
+                logger.error("MPESA_CALLBACK_URL not configured in settings")
+                payment.status = 'failed'
+                payment.error_message = "Payment service configuration error: Callback URL missing"
+                payment.save()
+                return Response(
+                    {"error": "Payment service configuration error"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+            try:
+                response = mpesa_service.stk_push(
+                    phone_number=payment.phone_number,
+                    amount=payment.amount,
+                    account_reference=f"Order-{order.id}",
+                    transaction_desc=f"Payment for Order {order.id}",
+                    callback_url=callback_url
+                )
+
+                if response.get('ResponseCode') == '0':
+                    payment.checkout_request_id = response.get('CheckoutRequestID')
+                    payment.save()
+                    logger.info(f"M-Pesa payment initiated, CheckoutRequestID: {payment.checkout_request_id}")
+                else:
+                    error_desc = response.get('ResponseDescription', 'Unknown error')
+                    logger.error(f"M-Pesa responded with error: {error_desc}")
+                    payment.status = 'failed'
+                    payment.error_message = error_desc
+                    payment.save()
+                    order.status = 'cancelled'
+                    order.payment_status = 'failed'
+                    order.save()
+                    return Response(
+                        {"error": f"Failed to initiate M-Pesa payment: {error_desc}", "details": response},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            except Exception as mpesa_error:
+                error_message = str(mpesa_error)
+                logger.error(f"M-Pesa request failed: {error_message}")
+                payment.status = 'failed'
+                payment.error_message = f"M-Pesa request error: {error_message}"
+                payment.save()
+                order.status = 'cancelled'
+                order.payment_status = 'failed'
+                order.save()
+                return Response(
+                    {"error": "Failed to connect to M-Pesa service", "details": error_message},
+                    status=status.HTTP_502_BAD_GATEWAY
+                )
 
             # Step 5: Create the delivery
             delivery_data = {
@@ -98,78 +145,12 @@ class CheckoutView(APIView):
             return Response({
                 "order": order_serializer.data,
                 "delivery_id": delivery.id,
-                "payment_status": "pending",
+                "payment_status": payment.status,
                 "message": "Checkout initiated. Please complete the payment on your phone."
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"Checkout failed for user {request.user.username}: {str(e)}")
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    def initiate_mpesa_payment(self, phone_number, amount, order_id):
-        # Africa's Talking M-Pesa STK Push
-        import africastalking
-
-        # Initialize Africa's Talking with your credentials
-        africastalking.initialize(
-            username='YOUR_AT_USERNAME',  # Replace with your Africa's Talking username
-            api_key='YOUR_AT_API_KEY'     # Replace with your Africa's Talking API key
-        )
-        payment = africastalking.Payment
-
-        try:
-            # Format phone number (e.g., +254712345678)
-            if not phone_number.startswith('+'):
-                phone_number = '+254' + phone_number.lstrip('0')
-
-            # Initiate STK push
-            response = payment.mobile_checkout(
-                product_name='YOUR_PRODUCT_NAME',  # Replace with your Africa's Talking product name
-                phone_number=phone_number,
-                currency_code='KES',
-                amount=amount,
-                metadata={'order_id': str(order_id)}
-            )
-            logger.info(f"M-Pesa payment initiated for order {order_id}: {response}")
-            return {"status": "success", "request_id": response['transactionId']}
-
-        except Exception as e:
-            logger.error(f"M-Pesa payment initiation failed for order {order_id}: {str(e)}")
-            return {"status": "failed", "error": str(e)}
-        
-
-class PaymentCallbackView(APIView):
-    def post(self, request):
-        try:
-            data = request.data
-            logger.info(f"Payment callback received: {data}")
-
-            # Extract payment details
-            transaction_id = data.get('transactionId')
-            status = data.get('status')  # e.g., "Success" or "Failed"
-            order_id = data.get('metadata', {}).get('order_id')
-
-            if not order_id or not transaction_id:
-                return Response({"error": "Invalid callback data"}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Update the order
-            order = Order.objects.get(id=order_id)
-            if status == "Success":
-                order.payment_status = 'successful'
-                order.status = 'processing'
-            else:
-                order.payment_status = 'failed'
-                order.status = 'cancelled'
-            order.save()
-
-            logger.info(f"Order {order_id} payment updated: {order.payment_status}")
-            return Response({"status": "success"}, status=status.HTTP_200_OK)
-
-        except Order.DoesNotExist:
-            logger.error(f"Order {order_id} not found in payment callback")
-            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            logger.error(f"Payment callback processing failed: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10

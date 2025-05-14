@@ -46,9 +46,9 @@ class Order(models.Model):
     request_id = models.CharField(
         max_length=36,
         unique=True,
-        null=False,  # Changed from null=True to ensure request_id is always set
-        blank=True,  # Allowing blank for form validation, but will be filled in save()
-        default='',  # Default empty string instead of None
+        null=False, 
+        blank=True,  
+        default='',  
         help_text='Unique ID for the order request to prevent duplicates.'
     )
 
