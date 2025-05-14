@@ -28,7 +28,7 @@ class Delivery(models.Model):
         ],
         default='pending'
     )
-    delivery_address = models.CharField(max_length=255)
+    delivery_address = models.CharField(max_length=255, blank=True)  # Make optional
     latitude = models.FloatField(
         null=True, blank=True,
         validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)]
@@ -39,7 +39,7 @@ class Delivery(models.Model):
     )
     estimated_delivery_time = models.DateTimeField(
         null=True, blank=True,
-        default=default_estimated_delivery_time  # Use the function instead of lambda
+        default=default_estimated_delivery_time
     )
     actual_delivery_time = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

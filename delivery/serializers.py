@@ -64,8 +64,11 @@ class DeliverySerializer(serializers.ModelSerializer):
                 response.raise_for_status()
                 address = response.json().get('display_name', '')
                 if not address:
-                    raise serializers.ValidationError("Could not determine address from coordinates")
-                data['delivery_address'] = address
+                    # Fallback if no address is found
+                    data['delivery_address'] = f"Location at ({latitude}, {longitude})"
+                else:
+                    data['delivery_address'] = address
             except requests.RequestException as e:
-                raise serializers.ValidationError(f"Failed to fetch address from coordinates: {str(e)}")
+                # Fallback if reverse geocoding fails
+                data['delivery_address'] = f"Location at ({latitude}, {longitude})"
         return data
