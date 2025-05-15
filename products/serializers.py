@@ -1,8 +1,6 @@
+# products/serializers.py
 from rest_framework import serializers
 from .models import Category, Branch, Product
-
-from rest_framework import serializers
-from .models import Category
 
 class CategorySerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
@@ -14,7 +12,6 @@ class CategorySerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         if obj.image:
             full_url = obj.image.url
-            print(f"Category: {obj.name}, Public ID: {obj.image}, Full URL: {full_url}")
             return full_url
         return None
 
@@ -26,14 +23,18 @@ class BranchSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
     branch = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.all())
-    image = serializers.CharField(allow_blank=True, required=False)
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'description', 'price', 'stock', 'category', 'branch', 'image', 'created_at']
 
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
+
     def to_representation(self, instance):
-        # Override to include nested category and branch data in responses
         representation = super().to_representation(instance)
         representation['category'] = CategorySerializer(instance.category).data
         representation['branch'] = BranchSerializer(instance.branch).data
