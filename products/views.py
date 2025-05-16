@@ -13,6 +13,8 @@ from .serializers import CategorySerializer, BranchSerializer, ProductSerializer
 from .permissions import IsAdminUser
 from .pagination import ProductPagination
 from rest_framework import viewsets
+from rest_framework import serializers
+
 
 # ViewSet for Categories (list only)
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -124,97 +126,66 @@ class ProductDetailView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, De
             )
 
 # Product Search View
-class ProductSearchView(APIView):
+class ProductSearchView(GenericAPIView, ListModelMixin):
+    queryset = Product.objects.filter(stock__gt=0)
+    serializer_class = ProductSerializer
     pagination_class = ProductPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['category']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        query = self.request.query_params.get('q', '').strip()
+        min_price = self.request.query_params.get('min_price', None)
+        max_price = self.request.query_params.get('max_price', None)
+        sort_by = self.request.query_params.get('sort_by', 'name')
+
+        # Validate sort_by
+        valid_sorts = ['name', '-name', 'price', '-price']
+        if sort_by not in valid_sorts:
+            raise serializers.ValidationError(
+                "Invalid sort_by. Use 'name', '-name', 'price', or '-price'."
+            )
+
+        # Apply search if query is provided
+        if query:
+            search_query = SearchQuery(query)
+            queryset = queryset.annotate(
+                search=SearchVector('name', 'description'),
+                rank=SearchRank(SearchVector('name', 'description'), search_query)
+            ).filter(search=search_query).order_by('-rank')
+        else:
+            queryset = queryset.order_by(sort_by)
+
+        # Apply price filters
+        if min_price:
+            try:
+                queryset = queryset.filter(price__gte=float(min_price))
+            except ValueError:
+                raise serializers.ValidationError("Invalid min_price.")
+
+        if max_price:
+            try:
+                queryset = queryset.filter(price__lte=float(max_price))
+            except ValueError:
+                raise serializers.ValidationError("Invalid max_price.")
+
+        return queryset
 
     def get(self, request, *args, **kwargs):
         try:
-            # Get query parameters
-            query = request.query_params.get('q', '').strip()
-            category_id = request.query_params.get('category', None)
-            min_price = request.query_params.get('min_price', None)
-            max_price = request.query_params.get('max_price', None)
-            sort_by = request.query_params.get('sort_by', 'name')  # Default to name
-
-            # Validate sort_by
-            valid_sorts = ['name', '-name', 'price', '-price']
-            if sort_by not in valid_sorts:
-                return Response(
-                    {"error": "Invalid sort_by. Use 'name', '-name', 'price', or '-price'."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Start with in-stock products
-            queryset = Product.objects.filter(stock__gt=0)
-
-            # Apply search if query is provided
-            if query:
-                # Use PostgreSQL full-text search
-                search_query = SearchQuery(query)
-                queryset = queryset.annotate(
-                    search=SearchVector('name', 'description'),
-                    rank=SearchRank(SearchVector('name', 'description'), search_query)
-                ).filter(search=search_query).order_by('-rank')
-            else:
-                # If no query, order by sort_by
-                queryset = queryset.order_by(sort_by)
-
-            # Apply filters
-            if category_id:
-                try:
-                    queryset = queryset.filter(category__id=int(category_id))
-                except ValueError:
-                    return Response(
-                        {"error": "Invalid category ID."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-
-            if min_price:
-                try:
-                    queryset = queryset.filter(price__gte=float(min_price))
-                except ValueError:
-                    return Response(
-                        {"error": "Invalid min_price."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-
-            if max_price:
-                try:
-                    queryset = queryset.filter(price__lte=float(max_price))
-                except ValueError:
-                    return Response(
-                        {"error": "Invalid max_price."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-
-            # Apply sorting if no search query (search uses rank)
-            if not query:
-                queryset = queryset.order_by(sort_by)
-
-            # Paginate results
-            page = self.paginate_queryset(queryset, request)
-            if page is not None:
-                serializer = ProductSerializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
-
-            # Non-paginated response (rare)
-            serializer = ProductSerializer(queryset, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
+            return self.list(request, *args, **kwargs)
+        except serializers.ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         except Exception as e:
             return Response(
                 {"error": f"Search failed: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-    def paginate_queryset(self, queryset, request):
-        if self.pagination_class is None:
-            return None
-        return self.pagination_class().paginate_queryset(queryset, request, view=self)
-
-    def get_paginated_response(self, data):
-        assert self.pagination_class is not None
-        return self.pagination_class().get_paginated_response(data)
+    
 # New views for bulk creation
 class BulkCategoryCreateView(GenericAPIView):
     serializer_class = CategorySerializer
