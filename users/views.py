@@ -4,8 +4,10 @@ from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
-from .serializers import CustomUserSerializer
+from .serializers import CustomUserSerializer,UserUpdateSerializer
 from django.conf import settings  
+from rest_framework.permissions import IsAuthenticated
+
 import requests  
 from rest_framework.permissions import AllowAny
 import logging
@@ -146,3 +148,20 @@ class GoogleLoginView(APIView):
                 {'error': f"Unexpected error: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        serializer = CustomUserSerializer(request.user)
+        return Response(serializer.data)
+
+class UserProfileUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+    def put(self, request):
+        serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
