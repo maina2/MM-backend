@@ -1,4 +1,3 @@
-# products/serializers.py
 from rest_framework import serializers
 from .models import Category, Branch, Product
 
@@ -24,10 +23,14 @@ class ProductSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
     branch = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.all())
     image = serializers.SerializerMethodField()
+    discounted_price = serializers.ReadOnlyField()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'stock', 'category', 'branch', 'image', 'created_at']
+        fields = [
+            'id', 'name', 'description', 'price', 'stock', 'category', 'branch',
+            'image', 'created_at', 'discount_percentage', 'discounted_price'
+        ]
 
     def get_image(self, obj):
         if obj.image:
