@@ -14,6 +14,7 @@ from .permissions import IsAdminUser
 from .pagination import ProductPagination
 from rest_framework import viewsets
 from rest_framework import serializers
+from rest_framework import generics
 
 
 # ViewSet for Categories (list only)
@@ -186,6 +187,32 @@ class ProductSearchView(GenericAPIView, ListModelMixin):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
+class OffersListView(generics.ListAPIView):
+    serializer_class = ProductSerializer
+    pagination_class = ProductPagination
+
+    def get_queryset(self):
+        queryset = Product.objects.filter(discount_percentage__gt=0, stock__gt=0)
+        # Filters
+        category = self.request.query_params.get('category')
+        min_discount = self.request.query_params.get('min_discount')
+        max_price = self.request.query_params.get('max_price')
+        sort_by = self.request.query_params.get('sort_by', '-discount_percentage')
+        if category:
+            queryset = queryset.filter(category_id=category)
+        if min_discount:
+            queryset = queryset.filter(discount_percentage__gte=min_discount)
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
+        # Validate sort_by
+        valid_sort_fields = [
+            'discount_percentage', '-discount_percentage',
+            'price', '-price',
+            'name', '-name'
+        ]
+        if sort_by not in valid_sort_fields:
+            sort_by = '-discount_percentage'
+        return queryset.order_by(sort_by)
 # New views for bulk creation
 class BulkCategoryCreateView(GenericAPIView):
     serializer_class = CategorySerializer

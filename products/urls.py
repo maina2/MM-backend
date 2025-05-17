@@ -2,7 +2,7 @@
 from django.urls import path, include
 from .views import (
     CategoryViewSet, CategoryDetailViewSet, ProductListView, ProductDetailView, ProductSearchView,BulkCategoryCreateView,
-    BulkBranchCreateView,BulkProductCreateView
+    BulkBranchCreateView,BulkProductCreateView,OffersListView
 )
 from rest_framework.routers import DefaultRouter
 
@@ -15,6 +15,7 @@ urlpatterns = [
     path('products/', ProductListView.as_view(), name='product-list'),
     path('products/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
     path('products/search/', ProductSearchView.as_view(), name='product-search'),
+    path('offers/', OffersListView.as_view(), name='offers-list'),
     path('bulk-categories/', BulkCategoryCreateView.as_view(), name='bulk-category-create'),
     path('bulk-branches/', BulkBranchCreateView.as_view(), name='bulk-branch-create'),
     path('bulk-products/', BulkProductCreateView.as_view(), name='bulk-product-create'),
