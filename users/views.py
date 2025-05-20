@@ -1,15 +1,17 @@
+# users/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import ListModelMixin, CreateModelMixin, UpdateModelMixin, DestroyModelMixin
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
-from .serializers import CustomUserSerializer,UserUpdateSerializer
-from django.conf import settings  
-from rest_framework.permissions import IsAuthenticated
-
-import requests  
-from rest_framework.permissions import AllowAny
+from .serializers import CustomUserSerializer, UserUpdateSerializer, AdminUserSerializer
+from .permissions import IsAdminUser
+from django.conf import settings
+from rest_framework.permissions import IsAuthenticated, AllowAny
+import requests
 import logging
 
 logger = logging.getLogger('social_django')
@@ -22,7 +24,6 @@ class RegisterView(APIView):
                 user = serializer.save()
                 user.set_password(request.data['password'])
                 user.save()
-                # Generate JWT tokens
                 refresh = RefreshToken.for_user(user)
                 return Response(
                     {
@@ -46,7 +47,6 @@ class LoginView(APIView):
             password = request.data.get('password')
             user = authenticate(username=username, password=password)
             if user:
-                # Generate JWT tokens
                 refresh = RefreshToken.for_user(user)
                 serializer = CustomUserSerializer(user)
                 return Response(
@@ -81,7 +81,6 @@ class GoogleLoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Exchange code for access token
         token_url = 'https://oauth2.googleapis.com/token'
         token_data = {
             'code': code,
@@ -98,7 +97,6 @@ class GoogleLoginView(APIView):
             access_token = token_data.get('access_token')
             logger.debug(f"Access token received: {access_token}")
 
-            # Fetch user info
             user_info_url = 'https://www.googleapis.com/oauth2/v3/userinfo'
             user_info_response = requests.get(
                 user_info_url,
@@ -108,12 +106,10 @@ class GoogleLoginView(APIView):
             user_info = user_info_response.json()
             logger.debug(f"User info: {user_info}")
 
-            # Extract user details
             email = user_info.get('email')
             name = user_info.get('name', '')
             google_id = user_info.get('sub')
 
-            # Find or create user
             try:
                 user = CustomUser.objects.get(email=email)
             except CustomUser.DoesNotExist:
@@ -127,7 +123,6 @@ class GoogleLoginView(APIView):
                 user.set_unusable_password()
                 user.save()
 
-            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             serializer = CustomUserSerializer(user)
             return Response({
@@ -148,8 +143,6 @@ class GoogleLoginView(APIView):
                 {'error': f"Unexpected error: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
-
 
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -164,4 +157,87 @@ class UserProfileUpdateView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=400)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class AdminUserListCreateView(GenericAPIView, ListModelMixin, CreateModelMixin):
+    queryset = CustomUser.objects.all()
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            logger.info(f"Admin {request.user.username} fetching user list")
+            return self.list(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Failed to fetch users: {str(e)}")
+            return Response(
+                {"error": f"Failed to fetch users: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def post(self, request, *args, **kwargs):
+        try:
+            logger.info(f"Admin {request.user.username} creating user")
+            return self.create(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Failed to create user: {str(e)}")
+            return Response(
+                {"error": f"Failed to create user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class AdminUserUpdateDeleteView(GenericAPIView, UpdateModelMixin, DestroyModelMixin):
+    queryset = CustomUser.objects.all()
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def put(self, request, *args, **kwargs):
+        try:
+            logger.info(f"Admin {request.user.username} updating user {kwargs.get('pk')}")
+            return self.update(request, *args, **kwargs)
+        except CustomUser.DoesNotExist:
+            logger.error(f"User {kwargs.get('pk')} not found")
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Failed to update user: {str(e)}")
+            return Response(
+                {"error": f"Failed to update user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def patch(self, request, *args, **kwargs):
+        try:
+            logger.info(f"Admin {request.user.username} partially updating user {kwargs.get('pk')}")
+            return self.partial_update(request, *args, **kwargs)
+        except CustomUser.DoesNotExist:
+            logger.error(f"User {kwargs.get('pk')} not found")
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Failed to update user: {str(e)}")
+            return Response(
+                {"error": f"Failed to update user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            logger.info(f"Admin {request.user.username} deleting user {kwargs.get('pk')}")
+            return self.destroy(request, *args, **kwargs)
+        except CustomUser.DoesNotExist:
+            logger.error(f"User {kwargs.get('pk')} not found")
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete user: {str(e)}")
+            return Response(
+                {"error": f"Failed to delete user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
