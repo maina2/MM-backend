@@ -1,9 +1,10 @@
+# delivery/models.py
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from datetime import timedelta
 from orders.models import Order
-from users.models import CustomUser
+from users.models import CustomUser  # Adjust 'users' to your app name (e.g., 'accounts')
 
 def default_estimated_delivery_time():
     """Return the default estimated delivery time (2 days from now)."""
@@ -16,7 +17,7 @@ class Delivery(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        limit_choices_to={'is_delivery_person': True}
+        limit_choices_to={'role': 'delivery'}  # Updated to use role
     )
     status = models.CharField(
         max_length=20,
@@ -28,7 +29,7 @@ class Delivery(models.Model):
         ],
         default='pending'
     )
-    delivery_address = models.CharField(max_length=255, blank=True)  # Make optional
+    delivery_address = models.CharField(max_length=255, blank=True)
     latitude = models.FloatField(
         null=True, blank=True,
         validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)]
