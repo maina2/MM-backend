@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 from .serializers import CustomUserSerializer, UserUpdateSerializer, AdminUserSerializer
-from .permissions import IsAdminUser
+from .permissions import IsAdminUser,IsCustomerUser
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated, AllowAny
 import requests
@@ -144,14 +144,15 @@ class GoogleLoginView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+# users/views.py (partial)
 class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsCustomerUser]
     def get(self, request):
         serializer = CustomUserSerializer(request.user)
         return Response(serializer.data)
 
 class UserProfileUpdateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsCustomerUser]
     def put(self, request):
         serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
