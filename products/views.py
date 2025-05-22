@@ -8,13 +8,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import APIView
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.db.models import Q
-from .models import Category, Branch, Product
+from .models import Category, Product
 from .serializers import CategorySerializer, BranchSerializer, ProductSerializer
 from .permissions import IsAdminUser
 from .pagination import ProductPagination
 from rest_framework import viewsets
 from rest_framework import serializers
 from rest_framework import generics
+from rest_framework.filters import SearchFilter
 
 
 # ViewSet for Categories (list only)
@@ -213,6 +214,22 @@ class OffersListView(generics.ListAPIView):
         if sort_by not in valid_sort_fields:
             sort_by = '-discount_percentage'
         return queryset.order_by(sort_by)
+    
+
+class AdminProductListCreateView(generics.ListCreateAPIView):
+    queryset = Product.objects.all().order_by("-created_at")
+    serializer_class = ProductSerializer
+    permission_classes = [IsAdminUser]
+    pagination_class = ProductPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ["category", "branch"]
+    search_fields = ["name", "description"]
+
+class AdminProductDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [IsAdminUser]
+    lookup_field = "id"
 # New views for bulk creation
 class BulkCategoryCreateView(GenericAPIView):
     serializer_class = CategorySerializer
