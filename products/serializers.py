@@ -25,7 +25,10 @@ class BranchSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
-    branch = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.all())
+    branch = serializers.PrimaryKeyRelatedField(
+        queryset=Branch.objects.all(),
+        default=Branch.objects.first().id  
+    )    
     image = serializers.SerializerMethodField()
     discounted_price = serializers.ReadOnlyField()
 
