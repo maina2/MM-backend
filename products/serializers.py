@@ -10,9 +10,13 @@ class CategorySerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         if obj.image:
-            full_url = obj.image.url
-            return full_url
+            return obj.image.url
         return None
+
+    def validate_name(self, value):
+        if Category.objects.filter(name__iexact=value).exclude(pk=self.instance.pk if self.instance else None).exists():
+            raise serializers.ValidationError("A category with this name already exists.")
+        return value
 
 class BranchSerializer(serializers.ModelSerializer):
     class Meta:

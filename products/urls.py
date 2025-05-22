@@ -2,7 +2,8 @@
 from django.urls import path, include
 from .views import (
     CategoryViewSet, CategoryDetailViewSet, ProductListView, ProductDetailView, ProductSearchView,BulkCategoryCreateView,
-    BulkBranchCreateView,BulkProductCreateView,OffersListView,AdminProductListCreateView,AdminProductDetailView
+    BulkBranchCreateView,BulkProductCreateView,OffersListView,AdminProductListCreateView,AdminProductDetailView,
+    AdminCategoryListCreateView,AdminCategoryDetailView
 )
 from rest_framework.routers import DefaultRouter
 
@@ -18,6 +19,8 @@ urlpatterns = [
     path('products/offers/', OffersListView.as_view(), name='offers-list'),
     path('manage/products/', AdminProductListCreateView.as_view(), name='admin-product-list-create'),
     path('manage/products/<int:id>/', AdminProductDetailView.as_view(), name='admin-product-detail'),
+    path('manage/categories/', AdminCategoryListCreateView.as_view(), name='admin-category-list-create'),
+    path('manage/categories/<int:id>/', AdminCategoryDetailView.as_view(), name='admin-category-detail'),
     path('bulk-categories/', BulkCategoryCreateView.as_view(), name='bulk-category-create'),
     path('bulk-branches/', BulkBranchCreateView.as_view(), name='bulk-branch-create'),
     path('bulk-products/', BulkProductCreateView.as_view(), name='bulk-product-create'),

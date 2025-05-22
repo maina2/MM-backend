@@ -230,6 +230,30 @@ class AdminProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductSerializer
     permission_classes = [IsAdminUser]
     lookup_field = "id"
+
+
+class AdminCategoryListCreateView(generics.ListCreateAPIView):
+    queryset = Category.objects.all().order_by('name')
+    serializer_class = CategorySerializer
+    permission_classes = [IsAdminUser]
+    pagination_class = ProductPagination
+    filter_backends = [SearchFilter]
+    search_fields = ['name', 'description']
+
+class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAdminUser]
+    lookup_field = 'id'
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.products.exists():
+            return Response(
+                {"error": "Cannot delete category with associated products."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().destroy(request, *args, **kwargs)
 # New views for bulk creation
 class BulkCategoryCreateView(GenericAPIView):
     serializer_class = CategorySerializer
