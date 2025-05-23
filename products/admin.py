@@ -22,20 +22,12 @@ class CategoryAdmin(admin.ModelAdmin):
         return "No Image"
     image_preview.short_description = 'Image'
 
-@admin.register(Branch)
-class BranchAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'address', 'created_at')
-    search_fields = ('name', 'address')
-    list_filter = ('created_at',)
-    readonly_fields = ('created_at',)
-    ordering = ('name',)
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'name',
-        'branch',
         'category',
         'price',
         'discounted_price_display',
@@ -45,10 +37,10 @@ class ProductAdmin(admin.ModelAdmin):
         'created_at',
     )
     search_fields = ('name', 'description')
-    list_filter = ('branch', 'category', 'discount_percentage', 'created_at')
+    list_filter = ( 'category', 'discount_percentage', 'created_at')
     list_per_page = 25
     list_editable = ('price', 'discount_percentage', 'stock')
-    autocomplete_fields = ('category', 'branch')
+    autocomplete_fields = ['category']
     fields = (
         'name',
         'description',
@@ -56,7 +48,6 @@ class ProductAdmin(admin.ModelAdmin):
         'discount_percentage',
         'stock',
         'category',
-        'branch',
         'image',
         'created_at',
     )
@@ -99,4 +90,4 @@ class ProductAdmin(admin.ModelAdmin):
         return super().formfield_for_dbfield(db_field, **kwargs)
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('category', 'branch')
+        return super().get_queryset(request).select_related('category')

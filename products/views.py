@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.db.models import Q
 from .models import Category, Product
-from .serializers import CategorySerializer, BranchSerializer, ProductSerializer
+from .serializers import CategorySerializer, ProductSerializer
 from .permissions import IsAdminUser
 from .pagination import ProductPagination
 from rest_framework import viewsets
@@ -222,7 +222,7 @@ class AdminProductListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAdminUser]
     pagination_class = ProductPagination
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ["category", "branch"]
+    filterset_fields = ["category"]
     search_fields = ["name", "description"]
 
 class AdminProductDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -275,29 +275,6 @@ class BulkCategoryCreateView(GenericAPIView):
         except Exception as e:
             return Response(
                 {"error": f"Failed to create categories: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-class BulkBranchCreateView(GenericAPIView):
-    serializer_class = BranchSerializer
-    permission_classes = [IsAdminUser]
-
-    def post(self, request, *args, **kwargs):
-        try:
-            # Expecting a list of branch data
-            if not isinstance(request.data, list):
-                return Response(
-                    {"error": "Expected a list of branch data"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            serializer = self.get_serializer(data=request.data, many=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to create branches: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

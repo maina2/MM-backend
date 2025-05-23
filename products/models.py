@@ -33,21 +33,19 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='products', null=True, blank=True)
+    # branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='products', null=True, blank=True)
     image = CloudinaryField('image', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     search_vector = SearchVectorField(null=True, blank=True)
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)  # e.g., 20.00 for 20%
 
-    def __str__(self):
-        return f"{self.name} ({self.branch.name})"
 
     @property
     def discounted_price(self):
         return self.price * (1 - self.discount_percentage / 100) if self.discount_percentage > 0 else self.price
 
     class Meta:
-        unique_together = ['name', 'branch']
+        unique_together = ['name']
         ordering = ['name']
         indexes = [
             GinIndex(fields=['search_vector']),
