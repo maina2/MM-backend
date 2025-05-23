@@ -1,4 +1,4 @@
-from rest_framework import status
+from rest_framework import status,viewsets
 from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
 from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.response import Response
@@ -18,6 +18,9 @@ from payment.services import MpesaService
 from django.conf import settings
 import traceback
 from rest_framework import serializers
+from django.db.models import Q
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 logger = logging.getLogger(__name__)
@@ -301,3 +304,72 @@ class OrderDetailView(RetrieveUpdateAPIView):
                 {"detail": f"Failed to update order: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class AdminOrderViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for admin order management.
+    Supports listing, retrieving, updating, and deleting orders.
+    """
+    queryset = Order.objects.all().select_related('customer').prefetch_related('items__product')
+    serializer_class = OrderSerializer
+    permission_classes = [IsAdminUser]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['status', 'payment_status']
+    search_fields = ['customer__username', 'id', 'request_id']
+    ordering_fields = ['created_at', 'total_amount', 'id']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        """
+        Optimize query and apply search filtering.
+        """
+        queryset = super().get_queryset()
+        search_query = self.request.query_params.get('search', None)
+        if search_query:
+            queryset = queryset.filter(
+                Q(customer__username__icontains=search_query) |
+                Q(id__icontains=search_query) |
+                Q(request_id__icontains=search_query)
+            )
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        """
+        Allow admins to create orders manually.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(customer=request.user)  # Set customer to admin or validate input
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Update order details (e.g., status, payment_status).
+        """
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        # Recalculate total if items are updated
+        if 'items' in request.data:
+            instance.recalculate_total()
+        
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Allow partial updates (e.g., change status only).
+        """
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Delete an order.
+        """
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
