@@ -33,7 +33,6 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
-    # branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='products', null=True, blank=True)
     image = CloudinaryField('image', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     search_vector = SearchVectorField(null=True, blank=True)
