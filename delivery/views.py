@@ -1,24 +1,21 @@
-# delivery/views.py
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, UpdateModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from users.permissions import IsAdminUser
-from users.permissions import IsDeliveryUser
+from rest_framework.decorators import action
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+from users.permissions import IsAdminUser, IsDeliveryUser
 from orders.models import Order
 from .models import Delivery
 from .serializers import DeliverySerializer
-from django.utils import timezone
 import logging
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework import viewsets, status
-from products.permissions import IsAdminUser
-from rest_framework.decorators import action
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
+# Views for Delivery Persons and Customers
 class DeliveryListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     serializer_class = DeliverySerializer
 
@@ -146,11 +143,11 @@ class DeliveryDetailView(GenericAPIView, RetrieveModelMixin):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
+# Admin-specific ViewSet
 class DeliveryAdminViewSet(viewsets.ModelViewSet):
     queryset = Delivery.objects.all()
     serializer_class = DeliverySerializer
-    permission_classes = [IsAdminUser]  # Restrict to admin users only
+    permission_classes = [IsAdminUser]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['status', 'delivery_person', 'order__id']
     search_fields = ['delivery_address', 'order__id']
@@ -159,19 +156,27 @@ class DeliveryAdminViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Optimize queryset with select_related and prefetch_related to reduce database queries.
+        Optimize queryset with select_related for order and delivery_person.
         """
         return Delivery.objects.select_related('order', 'delivery_person').all()
 
     def create(self, request, *args, **kwargs):
         """
-        Create a new delivery. Ensures order has successful payment and is in 'processing' status.
+        Create a new delivery with validation for order payment and status.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
+            order = serializer.validated_data['order']
+            if hasattr(order, 'delivery'):
+                logger.warning(f"Delivery already exists for order {order.id}")
+                return Response(
+                    {"detail": "A delivery already exists for this order"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
+            logger.info(f"Delivery created: ID {serializer.instance.id} for Order {order.id}")
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except ValidationError as e:
             logger.error(f"Error creating delivery: {str(e)}")
@@ -179,13 +184,14 @@ class DeliveryAdminViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         """
-        Update delivery details, including status and delivery person assignment.
+        Update delivery details, including status and delivery person.
         """
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         try:
             self.perform_update(serializer)
+            logger.info(f"Delivery {instance.id} updated by admin {request.user.username}")
             return Response(serializer.data)
         except ValidationError as e:
             logger.error(f"Error updating delivery {instance.id}: {str(e)}")
@@ -194,7 +200,7 @@ class DeliveryAdminViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'], url_path='assign-delivery-person')
     def assign_delivery_person(self, request, pk=None):
         """
-        Custom action to assign or reassign a delivery person.
+        Assign or reassign a delivery person.
         """
         delivery = self.get_object()
         delivery_person_id = request.data.get('delivery_person_id')
@@ -208,6 +214,7 @@ class DeliveryAdminViewSet(viewsets.ModelViewSet):
             delivery.delivery_person = delivery_person
             delivery.save()
             serializer = self.get_serializer(delivery)
+            logger.info(f"Delivery {delivery.id} assigned to delivery person {delivery_person.id}")
             return Response(serializer.data)
         except CustomUser.DoesNotExist:
             logger.error(f"Delivery person with ID {delivery_person_id} not found or not a delivery role")
@@ -222,7 +229,7 @@ class DeliveryAdminViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'], url_path='update-status')
     def update_delivery_status(self, request, pk=None):
         """
-        Custom action to update delivery status with transition validation.
+        Update delivery status with transition validation.
         """
         delivery = self.get_object()
         new_status = request.data.get('status')
@@ -233,7 +240,12 @@ class DeliveryAdminViewSet(viewsets.ModelViewSet):
             )
         try:
             delivery.update_status(new_status)
+            if new_status == 'delivered':
+                delivery.order.status = 'delivered'
+                delivery.order.save()
+                logger.info(f"Order {delivery.order.id} status updated to delivered")
             serializer = self.get_serializer(delivery)
+            logger.info(f"Delivery {delivery.id} status updated to {new_status}")
             return Response(serializer.data)
         except ValueError as e:
             logger.error(f"Error updating delivery status for {delivery.id}: {str(e)}")
@@ -244,7 +256,7 @@ class DeliveryAdminViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """
-        Allow deletion of deliveries only if they are in 'pending' or 'cancelled' status.
+        Allow deletion of deliveries only if in 'pending' or 'cancelled' status.
         """
         instance = self.get_object()
         if instance.status not in ['pending', 'cancelled']:
@@ -255,6 +267,7 @@ class DeliveryAdminViewSet(viewsets.ModelViewSet):
             )
         try:
             self.perform_destroy(instance)
+            logger.info(f"Delivery {instance.id} deleted by admin {request.user.username}")
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             logger.error(f"Error deleting delivery {instance.id}: {str(e)}")
