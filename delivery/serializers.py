@@ -7,6 +7,10 @@ from orders.serializers import OrderSerializer
 from users.serializers import CustomUserSerializer
 from orders.models import Order
 from users.models import CustomUser
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 class DeliverySerializer(serializers.ModelSerializer):
     order = OrderSerializer(read_only=True)
