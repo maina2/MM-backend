@@ -23,7 +23,7 @@ class Branch(models.Model):
         verbose_name = 'Branch'
         verbose_name_plural = 'Branches'
         constraints = [
-            models.UniqueConstraint(fields=['name', 'city'], name='unique_branch_name_city')
+            models.UniqueConstraint(fields=['name'], name='unique_branch_name_city')
         ]
 
 

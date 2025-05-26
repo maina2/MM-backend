@@ -8,7 +8,7 @@ class BranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
         fields = ['id', 'name', 'address', 'city']
-        read_only_fields = ['id', 'name', 'address', 'city']
+        read_only_fields = ['id']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
