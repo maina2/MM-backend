@@ -8,7 +8,7 @@ urlpatterns = [
     path('manage/', include(router.urls)),
     path('orders-list/', OrderListView.as_view(), name='order-list'),
     path('orders-details/<int:id>/', OrderDetailView.as_view(), name='order-detail'),
-    path('checkout/', CheckoutView.as_view(), name='checkout'),
+    path('orders/checkout/', CheckoutView.as_view(), name='checkout'),
     path('payment-callback/', PaymentCallbackView.as_view(), name='payment-callback'),
     path('branches/', BranchListView.as_view(), name='branch-list'),
     path('branches/<int:pk>/', BranchDetailView.as_view(), name='branch-detail'),
