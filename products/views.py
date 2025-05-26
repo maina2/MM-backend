@@ -48,7 +48,7 @@ class ProductListView(GenericAPIView, ListModelMixin, CreateModelMixin):
     queryset = Product.objects.filter(stock__gt=0)  # Only in-stock products
     serializer_class = ProductSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['branch', 'category']
+    filterset_fields = ['category'] # CLEANED UP: Removed 'branch'
     pagination_class = ProductPagination
 
     def get_permissions(self):
@@ -187,7 +187,7 @@ class ProductSearchView(GenericAPIView, ListModelMixin):
                 {"error": f"Search failed: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    
+        
 class OffersListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = ProductPagination
