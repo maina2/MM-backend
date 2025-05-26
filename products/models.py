@@ -16,16 +16,7 @@ class Category(models.Model):
         ordering = ['name']
         verbose_name_plural = 'Categories'
 
-class Branch(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    address = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
 
 class Product(models.Model):
     name = models.CharField(max_length=200, db_index=True)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Order, OrderItem
+from .models import Order, OrderItem,Branch
 from products.serializers import ProductSerializer
 from products.models import Product
 
@@ -24,17 +24,21 @@ class OrderItemSerializer(serializers.ModelSerializer):
                 f"Insufficient stock for {product.name}. Available: {product.stock}, Requested: {quantity}"
             )
         return data
-
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = ['id', 'name', 'address', 'city']
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
     customer = serializers.StringRelatedField(read_only=True)
     request_id = serializers.CharField(read_only=True)  # Changed to read_only
+    branch = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Order
         fields = [
             'id', 'customer', 'total_amount', 'status', 'payment_status',
-            'payment_phone_number', 'created_at', 'updated_at', 'items', 'request_id'
+            'payment_phone_number', 'created_at', 'updated_at', 'items', 'request_id', 'branch'
         ]
         read_only_fields = ['total_amount', 'created_at', 'updated_at', 'payment_status', 'request_id']
 
@@ -100,6 +104,8 @@ class CheckoutSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=15)
     latitude = serializers.FloatField()
     longitude = serializers.FloatField()
+    branch_id = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.filter(is_active=True), required=True)
+
 
     def validate_phone_number(self, value):
         value = value.strip()

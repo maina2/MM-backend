@@ -1,7 +1,7 @@
 # products/admin.py
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Category, Branch, Product
+from .models import Category, Product
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):

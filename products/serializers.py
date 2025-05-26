@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Branch, Product
+from .models import Category, Product
 
 class CategorySerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
