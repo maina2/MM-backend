@@ -1,7 +1,15 @@
 from rest_framework import serializers
-from .models import Order, OrderItem,Branch
+from .models import Order, OrderItem, Branch
 from products.serializers import ProductSerializer
 from products.models import Product
+
+
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = ['id', 'name', 'address', 'city']
+        read_only_fields = ['id', 'name', 'address', 'city']
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
@@ -24,21 +32,22 @@ class OrderItemSerializer(serializers.ModelSerializer):
                 f"Insufficient stock for {product.name}. Available: {product.stock}, Requested: {quantity}"
             )
         return data
-class BranchSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Branch
-        fields = ['id', 'name', 'address', 'city']
+
+
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
     customer = serializers.StringRelatedField(read_only=True)
-    request_id = serializers.CharField(read_only=True)  # Changed to read_only
+    request_id = serializers.CharField(read_only=True)
     branch = serializers.StringRelatedField(read_only=True)
+    branch_id = serializers.PrimaryKeyRelatedField(
+        queryset=Branch.objects.filter(is_active=True), source='branch', write_only=True, required=True
+    )
 
     class Meta:
         model = Order
         fields = [
             'id', 'customer', 'total_amount', 'status', 'payment_status',
-            'payment_phone_number', 'created_at', 'updated_at', 'items', 'request_id', 'branch'
+            'payment_phone_number', 'created_at', 'updated_at', 'items', 'request_id', 'branch', 'branch_id'
         ]
         read_only_fields = ['total_amount', 'created_at', 'updated_at', 'payment_status', 'request_id']
 
@@ -59,8 +68,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')
+        branch = validated_data.pop('branch')  # Extract branch from branch_id
         order = Order.objects.create(
             customer=self.context['request'].user,
+            branch=branch,
             **validated_data
         )
         total_amount = 0
@@ -80,7 +91,7 @@ class OrderSerializer(serializers.ModelSerializer):
         order.total_amount = total_amount
         order.save()
         return order
-    
+
 
 class CartItemSerializer(serializers.Serializer):
     product = serializers.DictField()
@@ -99,13 +110,16 @@ class CartItemSerializer(serializers.Serializer):
             raise serializers.ValidationError(f"Product with id {product_id} does not exist.")
         return value
 
+
 class CheckoutSerializer(serializers.Serializer):
     cart_items = serializers.ListField(child=CartItemSerializer(), min_length=1)
     phone_number = serializers.CharField(max_length=15)
     latitude = serializers.FloatField()
     longitude = serializers.FloatField()
-    branch_id = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.filter(is_active=True), required=True)
-
+    branch_id = serializers.PrimaryKeyRelatedField(
+        queryset=Branch.objects.filter(is_active=True), required=True,
+        help_text="ID of the branch for order fulfillment."
+    )
 
     def validate_phone_number(self, value):
         value = value.strip()

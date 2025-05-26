@@ -20,12 +20,19 @@ class Branch(models.Model):
 
     class Meta:
         ordering = ['name']
+        verbose_name = 'Branch'
+        verbose_name_plural = 'Branches'
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'city'], name='unique_branch_name_city')
+        ]
+
+
 class Order(models.Model):
     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True)
+    branch = models.ForeignKey('Branch', on_delete=models.SET_NULL)
     payment_phone_number = models.CharField(
         max_length=15,
         null=True,
@@ -61,9 +68,9 @@ class Order(models.Model):
     request_id = models.CharField(
         max_length=36,
         unique=True,
-        null=False, 
-        blank=True,  
-        default='',  
+        null=False,
+        blank=True,
+        default='',
         help_text='Unique ID for the order request to prevent duplicates.'
     )
 
@@ -75,10 +82,8 @@ class Order(models.Model):
             self.payment_phone_number = f'+{self.payment_phone_number}'
 
     def save(self, *args, **kwargs):
-        # Generate a new request_id if not provided
         if not self.request_id:
             self.request_id = str(uuid.uuid4())
-        
         self.clean()
         super().save(*args, **kwargs)
 
@@ -94,7 +99,9 @@ class Order(models.Model):
             models.Index(fields=['status']),
             models.Index(fields=['payment_status']),
             models.Index(fields=['request_id']),
+            models.Index(fields=['branch']),
         ]
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')

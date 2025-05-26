@@ -1,19 +1,19 @@
-from rest_framework import status,viewsets
+from rest_framework import status,viewsets,generics
 from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
 from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.pagination import PageNumberPagination
 from products.permissions import IsAdminUser
 from .models import Order
 from .serializers import OrderSerializer
 import logging
 from django.db import transaction
-from orders.models import Order, OrderItem
-from orders.serializers import OrderSerializer,CheckoutSerializer
+from orders.models import Order, OrderItem,Branch
+from orders.serializers import OrderSerializer,CheckoutSerializer,BranchSerializer
 from delivery.serializers import DeliverySerializer
 from rest_framework.views import APIView
-from payment.models import Payment  # Import Payment model
+from payment.models import Payment  
 from payment.services import MpesaService
 from django.conf import settings
 import traceback
@@ -25,7 +25,21 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 logger = logging.getLogger(__name__)
 
-
+class BranchListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    queryset = Branch.objects.filter(is_active=True)
+    serializer_class = BranchSerializer
+class BranchCreateListView(generics.ListCreateAPIView):
+    queryset = Branch.objects.all() 
+    serializer_class = BranchSerializer
+    permission_classes = [IsAdminUser]
+class BranchDetailView(generics.RetrieveAPIView):
+    queryset = Branch.objects.filter(is_active=True)
+    serializer_class = BranchSerializer
+class BranchUpdateView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
+    permission_classes = [IsAdminUser]
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -60,7 +74,8 @@ class CheckoutView(APIView):
                 total_amount=total_amount,
                 status='pending',
                 payment_status='pending',
-                payment_phone_number=phone_number
+                payment_phone_number=phone_number,
+                branch_id=validated_data['branch_id']  # New
             )
             logger.info(f"Order created: ID {order.id} for user {user.username}")
 
