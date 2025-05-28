@@ -1,10 +1,9 @@
-# delivery/models.py
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from datetime import timedelta
 from orders.models import Order
-from users.models import CustomUser  # Adjust 'users' to your app name (e.g., 'accounts')
+from users.models import CustomUser  # Assuming 'users' app
 
 def default_estimated_delivery_time():
     """Return the default estimated delivery time (2 days from now)."""
@@ -17,29 +16,33 @@ class Delivery(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        limit_choices_to={'role': 'delivery'}  # Updated to use role
+        limit_choices_to={'role': 'delivery'}
     )
     status = models.CharField(
-        max_length=20,
+        max_length=15,
         choices=[
             ('pending', 'Pending'),
+            ('assigned', 'Assigned'),
             ('in_transit', 'In Transit'),
             ('delivered', 'Delivered'),
             ('cancelled', 'Cancelled')
         ],
         default='pending'
     )
-    delivery_address = models.CharField(max_length=255, blank=True)
+    delivery_address = models.CharField(max_length=255)
     latitude = models.FloatField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)]
     )
     longitude = models.FloatField(
-        null=True, blank=True,
-        validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)]
-    )
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)
+    ])
     estimated_delivery_time = models.DateTimeField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         default=default_estimated_delivery_time
     )
     actual_delivery_time = models.DateTimeField(null=True, blank=True)
@@ -52,7 +55,8 @@ class Delivery(models.Model):
     def can_transition_to(self, new_status):
         """Define valid status transitions."""
         transitions = {
-            'pending': ['in_transit', 'cancelled'],
+            'pending': ['assigned', 'cancelled'],
+            'assigned': ['in_transit', 'cancelled'],
             'in_transit': ['delivered', 'cancelled'],
             'delivered': [],
             'cancelled': []
@@ -70,3 +74,7 @@ class Delivery(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['delivery_person', 'status']),
+            models.Index(fields=['order']),
+        ]

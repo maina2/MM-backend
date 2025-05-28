@@ -1,6 +1,6 @@
-# delivery/serializers.py
 from rest_framework import serializers
 import requests
+from time import sleep
 from django.core.cache import cache
 from .models import Delivery
 from orders.serializers import OrderSerializer
@@ -8,7 +8,6 @@ from users.serializers import CustomUserSerializer
 from orders.models import Order
 from users.models import CustomUser
 import logging
-
 
 logger = logging.getLogger(__name__)
 
@@ -40,26 +39,20 @@ class DeliverySerializer(serializers.ModelSerializer):
     def validate_order(self, order):
         if not hasattr(order, 'payment') or order.payment.status != 'successful':
             raise serializers.ValidationError("Order must have a successful payment")
-        if order.status != 'processing':
-            raise serializers.ValidationError("Order must be in 'processing' status")
+        if order.status not in ['pending', 'processing']:
+            raise serializers.ValidationError("Order must be in 'pending' or 'processing' status")
         return order
 
     def validate_latitude(self, value):
-        if value is not None and (value < -90 or value > 90):
-            raise serializers.ValidationError("Latitude must be between -90 and 90")
-        return value
+        return value  # Rely on model validators
 
     def validate_longitude(self, value):
-        if value is not None and (value < -180 or value > 180):
-            raise serializers.ValidationError("Longitude must be between -180 and 180")
-        return value
+        return value  # Rely on model validators
 
     def validate_status(self, value):
         instance = getattr(self, 'instance', None)
         if instance and not instance.can_transition_to(value):
-            raise serializers.ValidationError(
-                f"Cannot transition from {instance.status} to {value}"
-            )
+            raise serializers.ValidationError(f"Cannot transition from {instance.status} to {value}")
         return value
 
     def validate(self, data):
@@ -71,19 +64,24 @@ class DeliverySerializer(serializers.ModelSerializer):
             if cached_address:
                 data['delivery_address'] = cached_address
             else:
-                try:
-                    response = requests.get(
-                        f"https://nominatim.openstreetmap.org/reverse?lat={latitude}&lon={longitude}&format=json",
-                        headers={'User-Agent': 'MuindiMwesiApp/1.0'},
-                        timeout=5
-                    )
-                    response.raise_for_status()
-                    address = response.json().get('display_name', '')
-                    data['delivery_address'] = address or f"Location at ({latitude}, {longitude})"
-                    cache.set(cache_key, data['delivery_address'], timeout=86400)
-                except requests.RequestException as e:
-                    logger.error(f"Geocoding failed: {str(e)}")
-                    data['delivery_address'] = f"Location at ({latitude}, {longitude})"
+                for attempt in range(3):
+                    try:
+                        response = requests.get(
+                            f"https://nominatim.openstreetmap.org/reverse?lat={latitude}&lon={longitude}&format=json",
+                            headers={'User-Agent': 'MuindiMwesiApp/1.0'},
+                            timeout=5
+                        )
+                        response.raise_for_status()
+                        address = response.json().get('display_name', '')
+                        data['delivery_address'] = address or f"Location at ({latitude}, {longitude})"
+                        cache.set(cache_key, data['delivery_address'], timeout=86400)
+                        break
+                    except requests.RequestException as e:
+                        logger.error(f"Geocoding attempt {attempt + 1} failed: {str(e)}")
+                        if attempt < 2:
+                            sleep(1)  # Wait before retrying
+                        else:
+                            data['delivery_address'] = f"Location at ({latitude}, {longitude})"
         if not data.get('delivery_address'):
             raise serializers.ValidationError("Delivery address is required")
         return data
