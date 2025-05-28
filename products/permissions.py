@@ -12,3 +12,8 @@ class IsDeliveryPerson(permissions.BasePermission):
     def has_permission(self, request, view):
         # Restrict all methods to users with role='delivery'
         return request.user.is_authenticated and request.user.role == 'delivery'
+
+class IsCustomerUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        # Restrict all methods to users with role='customer'
+        return request.user.is_authenticated and request.user.role == 'customer'

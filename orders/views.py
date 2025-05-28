@@ -1,5 +1,5 @@
 from rest_framework import status, viewsets, generics
-from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -7,6 +7,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from users.permissions import IsCustomerUser,IsAdminUser
 from django.db import transaction
 from django.db.models import Q
 from django.conf import settings
@@ -305,37 +306,24 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_size_query_param = "page_size"
     max_page_size = 100
 
-
-class OrderListView(GenericAPIView, ListModelMixin, CreateModelMixin):
+class OrderListView(GenericAPIView, ListModelMixin):
     """
-    API view for listing and creating orders.
-    Supports pagination and different permissions for GET and POST requests.
+    API view for listing orders belonging to the authenticated customer user.
+    Supports pagination.
     """
     serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated, IsCustomerUser]
     pagination_class = StandardResultsSetPagination
-
-    def get_permissions(self):
-        """
-        Sets permissions based on the HTTP method.
-        POST requests require authentication, GET requests require authentication and admin status.
-        """
-        if self.request.method == "POST":
-            return [IsAuthenticated()]
-        return [IsAuthenticated(), IsAdminUser()]
 
     def get_queryset(self):
         """
-        Returns the queryset for orders based on user role.
-        Admins can see all orders, regular users can only see their own orders.
+        Returns orders belonging to the authenticated customer user.
         """
-        user = self.request.user
-        if user.is_admin:
-            return Order.objects.all()
-        return Order.objects.filter(customer=user)
+        return Order.objects.filter(customer=self.request.user)
 
     def get(self, request, *args, **kwargs):
         """
-        Handles GET requests to list orders.
+        Handles GET requests to list the customer's orders.
         """
         try:
             return self.list(request, *args, **kwargs)
@@ -345,44 +333,19 @@ class OrderListView(GenericAPIView, ListModelMixin, CreateModelMixin):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def post(self, request, *args, **kwargs):
-        """
-        Handles POST requests to create a new order.
-        """
-        try:
-            serializer = self.get_serializer(data=request.data, context={"request": request})
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(
-                {"detail": "Invalid order data", "errors": serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except Exception as e:
-            return Response(
-                {"detail": f"Failed to create order: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-
-class OrderDetailView(RetrieveUpdateAPIView):
+class OrderDetailView(RetrieveAPIView):
     """
-    API view for retrieving and updating a single order.
-    Supports partial updates and restricts updates for non-admin users.
+    API view for retrieving details of a specific order belonging to the authenticated customer user.
     """
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsCustomerUser]
     lookup_field = "id"
 
     def get_queryset(self):
         """
-        Returns the queryset for orders based on user role.
-        Admins can see all orders, regular users can only see their own orders.
+        Returns orders belonging to the authenticated customer user.
         """
-        user = self.request.user
-        if user.is_admin:
-            return Order.objects.all()
-        return Order.objects.filter(customer=user)
+        return Order.objects.filter(customer=self.request.user)
 
     def get(self, request, *args, **kwargs):
         """
@@ -397,31 +360,6 @@ class OrderDetailView(RetrieveUpdateAPIView):
         except Exception as e:
             return Response(
                 {"detail": f"Failed to fetch order: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    def patch(self, request, *args, **kwargs):
-        """
-        Handles PATCH requests for partial updates of an order.
-        Non-admin users are restricted to updating only 'status' and 'payment_status'.
-        """
-        try:
-            # Restrict updates to status and payment_status for non-admins
-            if not request.user.is_admin:
-                allowed_fields = {"status", "payment_status"}
-                if set(request.data.keys()) - allowed_fields:
-                    return Response(
-                        {"detail": "Only status and payment_status can be updated"},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-            return self.partial_update(request, *args, **kwargs)
-        except Order.DoesNotExist:
-            return Response(
-                {"detail": "Order not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {"detail": f"Failed to update order: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
