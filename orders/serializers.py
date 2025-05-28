@@ -116,10 +116,7 @@ class CheckoutSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=15)
     latitude = serializers.FloatField()
     longitude = serializers.FloatField()
-    branch_id = serializers.PrimaryKeyRelatedField(
-        queryset=Branch.objects.filter(is_active=True), required=True,
-        help_text="ID of the branch for order fulfillment."
-    )
+    branch_id = serializers.IntegerField()  
 
     def validate_phone_number(self, value):
         value = value.strip()

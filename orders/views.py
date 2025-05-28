@@ -465,10 +465,7 @@ class AdminOrderViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-        """
-        Updates order details (e.g., status, payment_status).
-        Recalculates total if order items are updated.
-        """
+
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -482,16 +479,12 @@ class AdminOrderViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def partial_update(self, request, *args, **kwargs):
-        """
-        Allows partial updates (e.g., change status only).
-        """
+
         kwargs["partial"] = True
         return self.update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-        """
-        Deletes an order.
-        """
+
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
