@@ -15,7 +15,96 @@ from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
+class DeliveryPersonViewSet(viewsets.ModelViewSet):
+    queryset = Delivery.objects.select_related('order', 'delivery_person').all()
+    serializer_class = DeliverySerializer
+    permission_classes = [IsAuthenticated, IsDeliveryUser]
 
+    def get_queryset(self):
+        """Return deliveries assigned to the requesting delivery person."""
+        return self.queryset.filter(delivery_person=self.request.user)
+
+    def get_serializer_class(self):
+        """Use RouteOptimizationSerializer for optimize_route action."""
+        if self.action == 'optimize_route':
+            return RouteOptimizationSerializer
+        return DeliverySerializer
+
+    @action(detail=False, methods=['post'], url_path='optimize-route')
+    def optimize_route(self, request):
+        """
+        Compute optimized route for delivery person's assigned deliveries.
+        Input: { start_location: [lat, lng], delivery_ids: [id1, id2, ...] }
+        Output: { optimized_route: [[lat, lng], ...] }
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        start_location = tuple(serializer.validated_data['start_location'])
+        delivery_ids = serializer.validated_data['delivery_ids']
+
+        # Fetch deliveries
+        deliveries = Delivery.objects.filter(id__in=delivery_ids, delivery_person=request.user)
+
+        # Ensure all deliveries have coordinates
+        locations = []
+        for delivery in deliveries:
+            if delivery.latitude is None or delivery.longitude is None:
+                # Reuse Nominatim reverse geocoding logic from DeliverySerializer
+                cache_key = f"geocode_{delivery.delivery_address}"
+                cached_coords = cache.get(cache_key)
+                if cached_coords:
+                    delivery.latitude, delivery.longitude = cached_coords
+                else:
+                    for attempt in range(3):
+                        try:
+                            response = requests.get(
+                                f"https://nominatim.openstreetmap.org/search?q={delivery.delivery_address}&format=json",
+                                headers={'User-Agent': 'MuindiMwesiApp/1.0'},
+                                timeout=5
+                            )
+                            response.raise_for_status()
+                            results = response.json()
+                            if results:
+                                delivery.latitude = float(results[0]['lat'])
+                                delivery.longitude = float(results[0]['lon'])
+                                cache.set(cache_key, (delivery.latitude, delivery.longitude), timeout=86400)
+                                break
+                            else:
+                                logger.warning(f"No coordinates found for {delivery.delivery_address}")
+                                return Response(
+                                    {"error": f"Unable to geocode address for delivery {delivery.id}"},
+                                    status=status.HTTP_400_BAD_REQUEST
+                                )
+                        except requests.RequestException as e:
+                            logger.error(f"Geocoding attempt {attempt + 1} failed for {delivery.delivery_address}: {str(e)}")
+                            if attempt < 2:
+                                sleep(1)
+                            else:
+                                return Response(
+                                    {"error": f"Geocoding failed for delivery {delivery.id}"},
+                                    status=status.HTTP_400_BAD_REQUEST
+                                )
+                delivery.save()
+            locations.append((delivery.latitude, delivery.longitude))
+
+        # Compute route
+        try:
+            route = compute_shortest_route(start_location, locations)
+            if route:
+                logger.info(f"Route computed for user {request.user.username} with {len(delivery_ids)} deliveries")
+                return Response({"optimized_route": route})
+            logger.error(f"Route computation failed for user {request.user.username}")
+            return Response(
+                {"error": "Unable to compute route"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Route computation error for user {request.user.username}: {str(e)}")
+            return Response(
+                {"error": f"Route computation failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 class DeliveryListView(GenericAPIView, ListModelMixin):
     serializer_class = DeliverySerializer
     permission_classes = [IsAuthenticated]

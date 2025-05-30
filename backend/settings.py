@@ -227,6 +227,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'delivery': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 # settings.py

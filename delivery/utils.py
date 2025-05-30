@@ -1,6 +1,46 @@
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 from geopy.distance import geodesic
+import requests
+import logging
+from time import sleep
+from django.core.cache import cache
+
+logger = logging.getLogger(__name__)
+
+def geocode_address(address):
+    """
+    Convert address to (latitude, longitude) using Nominatim.
+    Returns None if geocoding fails.
+    """
+    cache_key = f"geocode_{address}"
+    cached_coords = cache.get(cache_key)
+    if cached_coords:
+        logger.info(f"Retrieved cached coordinates for {address}")
+        return cached_coords
+
+    for attempt in range(3):
+        try:
+            response = requests.get(
+                f"https://nominatim.openstreetmap.org/search?q={address}&format=json",
+                headers={'User-Agent': 'MuindiMwesiApp/1.0'},
+                timeout=5
+            )
+            response.raise_for_status()
+            results = response.json()
+            if results:
+                latitude = float(results[0]['lat'])
+                longitude = float(results[0]['lon'])
+                cache.set(cache_key, (latitude, longitude), timeout=86400)
+                logger.info(f"Geocoded {address} to ({latitude}, {longitude})")
+                return (latitude, longitude)
+            logger.warning(f"No coordinates found for {address}")
+            return None
+        except requests.RequestException as e:
+            logger.error(f"Geocoding attempt {attempt + 1} failed for {address}: {str(e)}")
+            if attempt < 2:
+                sleep(1)
+    return None
 
 def compute_shortest_route(start_location, locations):
     """
@@ -12,6 +52,7 @@ def compute_shortest_route(start_location, locations):
         List of [lat, lng] representing the route, or None if failed.
     """
     if not locations or not start_location:
+        logger.warning("Empty locations or invalid start_location provided")
         return None
 
     all_locations = [start_location] + locations
@@ -47,14 +88,20 @@ def compute_shortest_route(start_location, locations):
     search_parameters.time_limit.seconds = 10  # Limit computation time
 
     # Solve
-    solution = routing.SolveWithParameters(search_parameters)
-    if solution:
-        route = []
-        index = routing.Start(0)
-        while not routing.IsEnd(index):
-            node = manager.IndexToNode(index)
-            route.append(list(all_locations[node]))  # Convert tuple to list [lat, lng]
-            index = solution.Value(routing.NextVar(index))
-        route.append(list(all_locations[0]))  # Return to start
-        return route
-    return None
+    try:
+        solution = routing.SolveWithParameters(search_parameters)
+        if solution:
+            route = []
+            index = routing.Start(0)
+            while not routing.IsEnd(index):
+                node = manager.IndexToNode(index)
+                route.append(list(all_locations[node]))  # Convert tuple to list [lat, lng]
+                index = solution.Value(routing.NextVar(index))
+            route.append(list(all_locations[0]))  # Return to start
+            logger.info(f"Computed route with {n} locations")
+            return route
+        logger.warning("No solution found for route computation")
+        return None
+    except Exception as e:
+        logger.error(f"Route computation failed: {str(e)}")
+        return None
