@@ -9,8 +9,9 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from users.permissions import IsAdminUser, IsDeliveryUser
 from orders.models import Order
 from .models import Delivery
-from .serializers import DeliverySerializer
+from delivery.serializers import DeliverySerializer,RouteOptimizationSerializer
 import logging
+from .utils import compute_shortest_route, geocode_address
 from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
@@ -50,42 +51,17 @@ class DeliveryPersonViewSet(viewsets.ModelViewSet):
         locations = []
         for delivery in deliveries:
             if delivery.latitude is None or delivery.longitude is None:
-                # Reuse Nominatim reverse geocoding logic from DeliverySerializer
-                cache_key = f"geocode_{delivery.delivery_address}"
-                cached_coords = cache.get(cache_key)
-                if cached_coords:
-                    delivery.latitude, delivery.longitude = cached_coords
+                # Use geocode_address from utils.py
+                coords = geocode_address(delivery.delivery_address)
+                if coords:
+                    delivery.latitude, delivery.longitude = coords
+                    delivery.save()
                 else:
-                    for attempt in range(3):
-                        try:
-                            response = requests.get(
-                                f"https://nominatim.openstreetmap.org/search?q={delivery.delivery_address}&format=json",
-                                headers={'User-Agent': 'MuindiMwesiApp/1.0'},
-                                timeout=5
-                            )
-                            response.raise_for_status()
-                            results = response.json()
-                            if results:
-                                delivery.latitude = float(results[0]['lat'])
-                                delivery.longitude = float(results[0]['lon'])
-                                cache.set(cache_key, (delivery.latitude, delivery.longitude), timeout=86400)
-                                break
-                            else:
-                                logger.warning(f"No coordinates found for {delivery.delivery_address}")
-                                return Response(
-                                    {"error": f"Unable to geocode address for delivery {delivery.id}"},
-                                    status=status.HTTP_400_BAD_REQUEST
-                                )
-                        except requests.RequestException as e:
-                            logger.error(f"Geocoding attempt {attempt + 1} failed for {delivery.delivery_address}: {str(e)}")
-                            if attempt < 2:
-                                sleep(1)
-                            else:
-                                return Response(
-                                    {"error": f"Geocoding failed for delivery {delivery.id}"},
-                                    status=status.HTTP_400_BAD_REQUEST
-                                )
-                delivery.save()
+                    logger.warning(f"Geocoding failed for delivery {delivery.id}: {delivery.delivery_address}")
+                    return Response(
+                        {"error": f"Unable to geocode address for delivery {delivery.id}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
             locations.append((delivery.latitude, delivery.longitude))
 
         # Compute route
