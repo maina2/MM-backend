@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Order, OrderItem, Branch
 from products.serializers import ProductSerializer
 from products.models import Product
-
+from users.serializers import CustomUserSerializer
 
 class BranchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,8 +36,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
-    customer = serializers.StringRelatedField(read_only=True)
-    request_id = serializers.CharField(read_only=True)
+    customer = CustomUserSerializer(read_only=True)  
     branch = serializers.StringRelatedField(read_only=True)
     branch_id = serializers.PrimaryKeyRelatedField(
         queryset=Branch.objects.filter(is_active=True), source='branch', write_only=True, required=True
