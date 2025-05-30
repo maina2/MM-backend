@@ -15,6 +15,7 @@ from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
+
 class DeliveryListView(GenericAPIView, ListModelMixin):
     serializer_class = DeliverySerializer
     permission_classes = [IsAuthenticated]

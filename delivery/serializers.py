@@ -95,3 +95,26 @@ class DeliverySerializer(serializers.ModelSerializer):
                 setattr(instance, attr, value)
         instance.save()
         return instance
+    
+
+class RouteOptimizationSerializer(serializers.Serializer):
+    start_location = serializers.ListField(
+        child=serializers.FloatField(), min_length=2, max_length=2
+    )  # [lat, lng]
+    delivery_ids = serializers.ListField(
+        child=serializers.IntegerField(), min_length=1
+    )  # [id1, id2, ...]
+    optimized_route = serializers.ListField(
+        child=serializers.ListField(child=serializers.FloatField(), min_length=2, max_length=2),
+        required=False
+    )  # [[lat, lng], ...]
+
+    def validate_delivery_ids(self, value):
+        """
+        Ensure delivery IDs exist and belong to the requesting delivery person.
+        """
+        user = self.context['request'].user
+        deliveries = Delivery.objects.filter(id__in=value, delivery_person=user)
+        if len(deliveries) != len(value):
+            raise serializers.ValidationError("Some delivery IDs are invalid or not assigned to you.")
+        return value

@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import DeliveryListView, DeliveryUpdateView, DeliveryDetailView, DeliveryAdminViewSet
 
 router = DefaultRouter()
-router.register(r'admin/deliveries', DeliveryAdminViewSet, basename='delivery-admin')
+router.register(r'manage/deliveries', DeliveryAdminViewSet, basename='delivery-admin')
 
 urlpatterns = [
     # Delivery Person Endpoints
