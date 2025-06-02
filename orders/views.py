@@ -13,7 +13,6 @@ from django.db.models import Q
 from django.conf import settings
 import logging
 import traceback
-
 from products.permissions import IsAdminUser
 from orders.models import Order, OrderItem, Branch
 from orders.serializers import OrderSerializer, CheckoutSerializer, BranchSerializer
