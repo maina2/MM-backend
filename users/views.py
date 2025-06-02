@@ -7,6 +7,8 @@ from rest_framework.mixins import ListModelMixin, CreateModelMixin, UpdateModelM
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
+from products.models import Product
+from orders.models import Order
 from .serializers import CustomUserSerializer, UserUpdateSerializer, AdminUserSerializer
 from .permissions import IsAdminUser,IsCustomerUser
 from django.conf import settings
@@ -240,5 +242,24 @@ class AdminUserUpdateDeleteView(GenericAPIView, UpdateModelMixin, DestroyModelMi
             logger.error(f"Failed to delete user: {str(e)}")
             return Response(
                 {"error": f"Failed to delete user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+class AdminStatsView(APIView):
+    permission_classes = [IsAdminUser]  # Use custom IsAdminUser
+
+    def get(self, request):
+        try:
+            users_count = CustomUser.objects.filter(role='customer').count()  # Count only customers
+            products_count = Product.objects.count()
+            orders_count = Order.objects.count()
+
+            return Response({
+                "users": users_count,
+                "products": products_count,
+                "orders": orders_count,
+            })
+        except Exception as e:
+            return Response(
+                {"error": "Failed to fetch stats"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

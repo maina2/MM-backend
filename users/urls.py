@@ -8,6 +8,7 @@ from .views import (
     UserProfileUpdateView,
     AdminUserListCreateView,
     AdminUserUpdateDeleteView,
+    AdminStatsView
 )
 
 urlpatterns = [
@@ -18,4 +19,6 @@ urlpatterns = [
     path('profile/update/', UserProfileUpdateView.as_view(), name='profile-update'),
     path('manage/users/', AdminUserListCreateView.as_view(), name='manage-user-list'),
     path('manage/users/<int:pk>/', AdminUserUpdateDeleteView.as_view(), name='manage-user-detail'),
+    path("manage/stats/", AdminStatsView.as_view(), name="admin-stats"),
+
 ]
