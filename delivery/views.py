@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from users.permissions import IsAdminUser, IsDeliveryUser
-from orders.models import Order
+from users.models import CustomUser 
 from .models import Delivery
 from .serializers import DeliverySerializer, RouteOptimizationSerializer  # Fixed import
 import logging
