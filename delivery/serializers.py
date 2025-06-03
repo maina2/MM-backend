@@ -34,7 +34,7 @@ class DeliverySerializer(serializers.ModelSerializer):
             'status', 'delivery_address', 'latitude', 'longitude',
             'estimated_delivery_time', 'actual_delivery_time', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at', 'actual_delivery_time']
+        read_only_fields = ['created_at','delivery_address', 'updated_at', 'actual_delivery_time']
 
     def validate_order(self, order):
         if not hasattr(order, 'payment') or order.payment.status != 'successful':
