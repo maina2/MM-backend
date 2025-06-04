@@ -9,7 +9,6 @@ cryptography==44.0.2
 daraja-mpesa==1.2.1
 defusedxml==0.7.1
 dj-database-url==2.3.0
-django-allauth==0.63.3
 Django==5.2
 django-cloudinary-storage==0.3.0
 django-cors-headers==4.7.0
@@ -22,11 +21,13 @@ dotenv==0.9.9
 future==1.0.0
 geographiclib==2.0
 geopy==2.4.1
+gunicorn==23.0.0
 idna==3.10
 immutabledict==4.2.1
 numpy==2.2.6
 oauthlib==3.2.2
 ortools==9.12.4544
+packaging==25.0
 pandas==2.2.3
 protobuf==5.29.5
 psycopg2-binary==2.9.10
@@ -48,3 +49,4 @@ typing_extensions==4.13.2
 tzdata==2025.2
 urllib3==2.4.0
 uuid==1.30
+whitenoise==6.9.0
