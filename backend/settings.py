@@ -1,16 +1,9 @@
-"""
-Django settings for Muindi Mweusi Supermarket backend.
-"""
+# backend/settings.py
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-from urllib.parse import urlparse
 from decouple import config
 from datetime import timedelta
 import dj_database_url
-
-
-load_dotenv()
 
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -18,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security settings
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # Installed applications
 INSTALLED_APPS = [
@@ -28,6 +21,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -41,21 +39,38 @@ INSTALLED_APPS = [
     'payment',
 ]
 
+SITE_ID = 1
+
 # Custom user model
 AUTH_USER_MODEL = 'users.CustomUser'
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# Google OAuth credentials for manual authentication
-GOOGLE_CLIENT_ID = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
-GOOGLE_CLIENT_SECRET = config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
-GOOGLE_REDIRECT_URI = 'http://localhost:5173/auth/google/callback'
+# Google OAuth credentials
+GOOGLE_CLIENT_ID = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', default='')
+GOOGLE_CLIENT_SECRET = config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', default='')
+GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', default='http://localhost:5173/auth/google/callback')
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+    }
+}
+
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 
 # REST Framework settings
-# settings.py
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -63,16 +78,17 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
-        'DEFAULT_FILTER_BACKENDS': [
+    'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 12,  # Changed from 3 to 12
-    'PAGE_SIZE_QUERY_PARAM': 'page_size',  # Allow ?page_size=24
-    'MAX_PAGE_SIZE': 100,  # Prevent abuse
+    'PAGE_SIZE': 12,
+    'PAGE_SIZE_QUERY_PARAM': 'page_size',
+    'MAX_PAGE_SIZE': 100,
 }
+
 # JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=600),
@@ -87,8 +103,8 @@ SIMPLE_JWT = {
 # Middleware
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -111,22 +127,20 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 CORS_EXPOSE_HEADERS = ['authorization']
-# Static and media files
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / "static",  
-]
-STATIC_ROOT = BASE_DIR / "staticfiles"  
 
-# Add this to ensure Django can find static files in development
+# Static and media files
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 ]
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # URL configuration
@@ -174,12 +188,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static and media files
-STATIC_URL = '/static/'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
 # Cloudinary storage
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
@@ -193,12 +201,13 @@ MPESA_CONSUMER_SECRET = config('MPESA_CONSUMER_SECRET')
 MPESA_SHORTCODE = config('MPESA_SHORTCODE')
 MPESA_PASSKEY = config('MPESA_PASSKEY')
 MPESA_CALLBACK_URL = config('MPESA_CALLBACK_URL')
-MPESA_BASE_URL = config('MPESA_BASE_URL')  
+MPESA_BASE_URL = config('MPESA_BASE_URL')
 
 # Africa’s Talking settings
 AFRICASTALKING_USERNAME = config('AFRICASTALKING_USERNAME')
 AFRICASTALKING_API_KEY = config('AFRICASTALKING_API_KEY')
 AFRICASTALKING_PRODUCT_NAME = config('AFRICASTALKING_PRODUCT_NAME')
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -231,18 +240,6 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-    },
-}
-# settings.py
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
         '': {
             'handlers': ['console'],
             'level': 'DEBUG',
