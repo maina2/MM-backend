@@ -9,6 +9,7 @@ cryptography==44.0.2
 daraja-mpesa==1.2.1
 defusedxml==0.7.1
 dj-database-url==2.3.0
+django-allauth==0.63.3
 Django==5.2
 django-cloudinary-storage==0.3.0
 django-cors-headers==4.7.0
