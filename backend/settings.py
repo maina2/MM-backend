@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 from urllib.parse import urlparse
 from decouple import config
 from datetime import timedelta
+import dj_database_url
+
 
 load_dotenv()
 
@@ -150,17 +152,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database (Neon PostgreSQL)
-tmpPostgres = urlparse(os.getenv('DATABASE_URL'))
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': tmpPostgres.path.replace('/', ''),
-        'USER': tmpPostgres.username,
-        'PASSWORD': tmpPostgres.password,
-        'HOST': tmpPostgres.hostname,
-        'PORT': tmpPostgres.port or 5432,
-        'OPTIONS': {'sslmode': 'require'},
-    }
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 # Password validation
