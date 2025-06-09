@@ -144,7 +144,7 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
-CORS_EXPOSE_HEADERS = ['authorization','content-Type', 'set-cookie']
+CORS_EXPOSE_HEADERS = ['authorization','content-Type', 'cookie','set-cookie']
 
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = 'Lax'
