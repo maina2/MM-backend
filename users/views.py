@@ -80,6 +80,7 @@ class GoogleLoginView(APIView):
         code = request.GET.get('code')
         state = request.GET.get('state')
         stored_state = request.session.get('oauth_state')  # Adjust based on how state is stored
+        logger.debug(f"Received state: {state}, Stored state: {stored_state}, Session ID: {request.session.session_key}")
 
         if not code:
             logger.error('No authorization code received in callback')
@@ -234,9 +235,12 @@ class StoreStateView(APIView):
         if state:
             request.session['oauth_state'] = state
             request.session.modified = True
+            if not request.session.session_key:
+                request.session.create()  # Ensure session is created
+            logger.debug(f"Stored state: {state}, Session ID: {request.session.session_key}")
             return Response({'status': 'State stored'}, status=status.HTTP_200_OK)
         return Response({'error': 'State is missing'}, status=status.HTTP_400_BAD_REQUEST)
-# users/views.py (partial)
+    
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated, IsCustomerUser]
     def get(self, request):
