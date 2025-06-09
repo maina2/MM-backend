@@ -15,6 +15,9 @@ from django.conf import settings
 from rest_framework.permissions import IsAuthenticated, AllowAny
 import requests
 import logging
+from django.shortcuts import redirect
+from urllib.parse import urlencode
+import json 
 
 logger = logging.getLogger('social_django')
 
@@ -71,11 +74,12 @@ class LoginView(APIView):
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
+
     def get(self, request):
         # Handle Google's callback (GET request to /auth/google/callback/)
         code = request.GET.get('code')
         state = request.GET.get('state')
-        stored_state = request.session.get('oauth_state') or sessionStorage.getItem('oauth_state')
+        stored_state = request.session.get('oauth_state')  # Adjust based on how state is stored
 
         if not code:
             logger.error('No authorization code received in callback')
@@ -137,7 +141,7 @@ class GoogleLoginView(APIView):
             params = {
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
-                'user': serializer.data
+                'user': json.dumps(serializer.data)  # Stringify user data
             }
             redirect_url = f'{frontend_url}?{urlencode(params)}'
             return redirect(redirect_url)
@@ -148,7 +152,7 @@ class GoogleLoginView(APIView):
         except Exception as e:
             logger.error(f'Unexpected error: {str(e)}', exc_info=True)
             return redirect(f'https://muindi-mweusi.onrender.com/login?error=Unexpected+error')
-            
+
     def post(self, request):
         code = request.data.get('code')
         logger.debug(f"Received code: {code}")
