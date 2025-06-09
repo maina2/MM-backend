@@ -53,7 +53,7 @@ AUTHENTICATION_BACKENDS = [
 # Google OAuth credentials
 GOOGLE_CLIENT_ID = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', default='')
 GOOGLE_CLIENT_SECRET = config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', default='')
-GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', default='https://muindi-mweusi.onrender.com/auth/google/callback')
+GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', default='https://muindi-mweusi.onrender.com/auth/google/callback/')
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = True 
