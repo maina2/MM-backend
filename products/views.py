@@ -71,19 +71,6 @@ class ProductListView(GenericAPIView, ListModelMixin, CreateModelMixin):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    def post(self, request, *args, **kwargs):
-        try:
-            serializer = self.get_serializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to create product: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
 # Product Detail View
 class ProductDetailView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin):
     queryset = Product.objects.all()
@@ -102,30 +89,7 @@ class ProductDetailView(GenericAPIView, RetrieveModelMixin, UpdateModelMixin, De
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    def put(self, request, id, *args, **kwargs):
-        try:
-            product = get_object_or_404(Product, id=id)
-            serializer = self.get_serializer(product, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to update product: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
-    def delete(self, request, id, *args, **kwargs):
-        try:
-            product = get_object_or_404(Product, id=id)
-            product.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to delete product: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
 # Product Search View
 class ProductSearchView(GenericAPIView, ListModelMixin):
@@ -231,6 +195,27 @@ class AdminProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminUser]
     lookup_field = "id"
 
+    def put(self, request, *args, **kwargs):
+        
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=False)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, *args, **kwargs):
+
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, *args, **kwargs):
+
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class AdminCategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all().order_by('name')
