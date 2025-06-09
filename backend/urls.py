@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from users.views import GoogleLoginView
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/google/callback/', GoogleLoginView.as_view(), name='google_callback'),
+    path('', include('users.oauth_urls')),
     path('api/users/', include('users.urls')), 
     path('api/', include('products.urls')), 
     path('api/', include('orders.urls')), 

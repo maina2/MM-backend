@@ -226,7 +226,16 @@ class GoogleLoginView(APIView):
                 {'error': f"Unexpected error: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+class StoreStateView(APIView):
+    permission_classes = [AllowAny]
 
+    def post(self, request):
+        state = request.data.get('state')
+        if state:
+            request.session['oauth_state'] = state
+            request.session.modified = True
+            return Response({'status': 'State stored'}, status=status.HTTP_200_OK)
+        return Response({'error': 'State is missing'}, status=status.HTTP_400_BAD_REQUEST)
 # users/views.py (partial)
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated, IsCustomerUser]
