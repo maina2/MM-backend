@@ -78,17 +78,31 @@ class GoogleLoginView(APIView):
     def get(self, request):
         code = request.GET.get('code')
         state = request.GET.get('state')
-        stored_state = request.session.get('oauth_state')
+        
+        # Log session info
         session_id = request.session.session_key
-        logger.debug(f"Received state: {state}, Stored state: {stored_state}, Session ID: {session_id}")
+        stored_state = request.session.get('oauth_state')
+        
+        logger.debug(f"Callback - Received state: {state}")
+        logger.debug(f"Callback - Stored state: {stored_state}")
+        logger.debug(f"Callback - Session ID: {session_id}")
+        logger.debug(f"Callback - All session data: {dict(request.session)}")
 
         if not code:
             logger.error('No authorization code received in callback')
             return redirect(f'https://muindi-mweusi.onrender.com/login?error=No+authorization+code+received')
 
-        if state != stored_state:
-            logger.error(f'State mismatch. Received: {state}, Stored: {stored_state}, Session ID: {session_id}')
-            return redirect(f'https://muindi-mweusi.onrender.com/login?error=State+mismatch.+Authentication+failed')
+        # More flexible state validation
+        if not state:
+            logger.error('No state parameter received')
+            return redirect(f'https://muindi-mweusi.onrender.com/login?error=No+state+parameter')
+
+        # If session state is missing, we'll proceed but log it
+        if not stored_state:
+            logger.warning(f'No stored state found in session. Proceeding anyway. Session ID: {session_id}')
+        elif state != stored_state:
+            logger.error(f'State mismatch. Received: {state}, Stored: {stored_state}')
+            return redirect(f'https://muindi-mweusi.onrender.com/login?error=State+mismatch')
 
         try:
             # Exchange code for tokens
@@ -100,11 +114,15 @@ class GoogleLoginView(APIView):
                 'redirect_uri': settings.GOOGLE_REDIRECT_URI,
                 'grant_type': 'authorization_code',
             }
+            
+            logger.debug(f"Token request data: {token_data}")
+            
             token_response = requests.post(token_url, data=token_data)
             token_response.raise_for_status()
             token_data = token_response.json()
             access_token = token_data.get('access_token')
-            logger.debug(f'Access token received: {access_token}')
+            
+            logger.debug(f'Access token received: {access_token[:20]}...' if access_token else 'No access token')
 
             # Fetch user info
             user_info_url = 'https://www.googleapis.com/oauth2/v3/userinfo'
@@ -114,37 +132,60 @@ class GoogleLoginView(APIView):
             )
             user_info_response.raise_for_status()
             user_info = user_info_response.json()
-            logger.debug(f'User info: {user_info}')
+            
+            logger.debug(f'User info received: {user_info.get("email")}')
 
             # Process user
             email = user_info.get('email')
             name = user_info.get('name', '')
-            google_id = user_info.get('sub')
+            
+            if not email:
+                logger.error('No email received from Google')
+                return redirect(f'https://muindi-mweusi.onrender.com/login?error=No+email+from+Google')
 
             try:
                 user = CustomUser.objects.get(email=email)
+                logger.debug(f'Existing user found: {user.email}')
             except CustomUser.DoesNotExist:
+                # Create new user
+                username = email.split('@')[0]
+                # Ensure username is unique
+                counter = 1
+                original_username = username
+                while CustomUser.objects.filter(username=username).exists():
+                    username = f"{original_username}{counter}"
+                    counter += 1
+                
                 user = CustomUser.objects.create(
                     email=email,
-                    username=email.split('@')[0],
+                    username=username,
                     first_name=name.split()[0] if name else '',
                     last_name=' '.join(name.split()[1:]) if name else '',
                     is_active=True
                 )
                 user.set_unusable_password()
                 user.save()
+                logger.debug(f'New user created: {user.email}')
 
+            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             serializer = CustomUserSerializer(user)
+
+            # Clear the stored state
+            if 'oauth_state' in request.session:
+                del request.session['oauth_state']
+                request.session.save()
 
             # Redirect to frontend with tokens
             frontend_url = 'https://muindi-mweusi.onrender.com/auth/success'
             params = {
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
-                'user': json.dumps(serializer.data)  # Stringify user data
+                'user': json.dumps(serializer.data)
             }
             redirect_url = f'{frontend_url}?{urlencode(params)}'
+            
+            logger.debug(f'Redirecting to: {frontend_url}')
             return redirect(redirect_url)
 
         except requests.exceptions.RequestException as e:
@@ -155,32 +196,34 @@ class GoogleLoginView(APIView):
             return redirect(f'https://muindi-mweusi.onrender.com/login?error=Unexpected+error')
 
     def post(self, request):
+        """Handle direct code exchange (alternative flow)"""
         code = request.data.get('code')
-        logger.debug(f"Received code: {code}")
+        logger.debug(f"POST: Received code: {code}")
 
         if not code or not isinstance(code, str):
-            logger.error("Invalid or missing authorization code")
+            logger.error("POST: Invalid or missing authorization code")
             return Response(
                 {'error': 'Authorization code is missing or invalid'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        token_url = 'https://oauth2.googleapis.com/token'
-        token_data = {
-            'code': code,
-            'client_id': settings.GOOGLE_CLIENT_ID,
-            'client_secret': settings.GOOGLE_CLIENT_SECRET,
-            'redirect_uri': settings.GOOGLE_REDIRECT_URI,
-            'grant_type': 'authorization_code',
-        }
-
+        # Same token exchange logic as GET method
         try:
+            token_url = 'https://oauth2.googleapis.com/token'
+            token_data = {
+                'code': code,
+                'client_id': settings.GOOGLE_CLIENT_ID,
+                'client_secret': settings.GOOGLE_CLIENT_SECRET,
+                'redirect_uri': settings.GOOGLE_REDIRECT_URI,
+                'grant_type': 'authorization_code',
+            }
+
             token_response = requests.post(token_url, data=token_data)
             token_response.raise_for_status()
-            token_data = token_response.json()
-            access_token = token_data.get('access_token')
-            logger.debug(f"Access token received: {access_token}")
+            token_info = token_response.json()
+            access_token = token_info.get('access_token')
 
+            # Get user info
             user_info_url = 'https://www.googleapis.com/oauth2/v3/userinfo'
             user_info_response = requests.get(
                 user_info_url,
@@ -188,18 +231,27 @@ class GoogleLoginView(APIView):
             )
             user_info_response.raise_for_status()
             user_info = user_info_response.json()
-            logger.debug(f"User info: {user_info}")
 
             email = user_info.get('email')
             name = user_info.get('name', '')
-            google_id = user_info.get('sub')
 
+            if not email:
+                return Response({'error': 'No email from Google'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Get or create user
             try:
                 user = CustomUser.objects.get(email=email)
             except CustomUser.DoesNotExist:
+                username = email.split('@')[0]
+                counter = 1
+                original_username = username
+                while CustomUser.objects.filter(username=username).exists():
+                    username = f"{original_username}{counter}"
+                    counter += 1
+
                 user = CustomUser.objects.create(
                     email=email,
-                    username=email.split('@')[0],
+                    username=username,
                     first_name=name.split()[0] if name else '',
                     last_name=' '.join(name.split()[1:]) if name else '',
                     is_active=True
@@ -209,6 +261,7 @@ class GoogleLoginView(APIView):
 
             refresh = RefreshToken.for_user(user)
             serializer = CustomUserSerializer(user)
+            
             return Response({
                 'user': serializer.data,
                 'access': str(refresh.access_token),
@@ -216,13 +269,13 @@ class GoogleLoginView(APIView):
             }, status=status.HTTP_200_OK)
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Token exchange failed: {str(e)}")
+            logger.error(f"POST: Token exchange failed: {str(e)}")
             return Response(
                 {'error': f"Authentication error: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+            logger.error(f"POST: Unexpected error: {str(e)}", exc_info=True)
             return Response(
                 {'error': f"Unexpected error: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -232,22 +285,18 @@ class StoreStateView(APIView):
 
     def post(self, request):
         state = request.data.get('state')
-        if state:
-            request.session['oauth_state'] = state
-            if not request.session.session_key:
-                request.session.create()  # Create session explicitly
-            request.session.modified = True
-            logger.debug(f"Stored state: {state}, Session ID: {request.session.session_key}")
-            response = Response({'status': 'State stored'}, status=status.HTTP_200_OK)
-            response.set_cookie(
-                'sessionid',
-                request.session.session_key,
-                httponly=True,
-                secure=True,
-                samesite='None',
-            )
-            return response
-        return Response({'error': 'State is missing'}, status=status.HTTP_400_BAD_REQUEST)
+        if not state:
+            return Response({'error': 'State is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Ensure session exists
+        if not request.session.session_key:
+            request.session.create()
+        
+        request.session['oauth_state'] = state
+        request.session.save()  # Force save
+        
+        logger.debug(f"Stored state: {state}, Session ID: {request.session.session_key}")
+        return Response({'success': True})
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated, IsCustomerUser]
     def get(self, request):

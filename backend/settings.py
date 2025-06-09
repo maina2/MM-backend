@@ -53,14 +53,17 @@ AUTHENTICATION_BACKENDS = [
 # Google OAuth credentials
 GOOGLE_CLIENT_ID = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', default='')
 GOOGLE_CLIENT_SECRET = config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', default='')
-GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', default='https://muindi-mweusi.onrender.com/auth/google/callback/')
+GOOGLE_REDIRECT_URI='https://muindi-mweusi.onrender.com/auth/google/callback/'
 
+
+# Session settings - FIXED
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = True 
-SESSION_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_DOMAIN = None  
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  
-SESSION_COOKIE_AGE = 1209600 
+SESSION_COOKIE_SAMESITE = 'Lax'  
+SESSION_COOKIE_DOMAIN = None
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1209600
+SESSION_SAVE_EVERY_REQUEST = True  
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
@@ -124,15 +127,16 @@ MIDDLEWARE = [
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
-    'https://muindi-mweusi.onrender.com'
+    'https://muindi-mweusi.onrender.com',
+    'https://accounts.google.com',
                         
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 CORS_ALLOW_HEADERS = [
     'authorization',
-    'Content-Type',
-    'Cookie',
+    'content-type',
+    'cookie'
     'Authorization'
     'content-type',
     'accept',
@@ -141,7 +145,14 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
-CORS_EXPOSE_HEADERS = ['authorization','Content-Type','Cookie', 'Authorization']
+CORS_EXPOSE_HEADERS = ['authorization','content-Type', 'set-cookie']
+
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_TRUSTED_ORIGINS = [
+    'https://muindi-mweusi.onrender.com',
+    'https://accounts.google.com',
+]
 
 APPEND_SLASH = True
 
