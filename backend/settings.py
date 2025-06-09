@@ -143,6 +143,9 @@ CORS_ALLOW_HEADERS = [
 ]
 CORS_EXPOSE_HEADERS = ['authorization','Content-Type','Cookie', 'Authorization']
 
+APPEND_SLASH = True
+
+
 # Static and media files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]

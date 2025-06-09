@@ -75,21 +75,20 @@ class LoginView(APIView):
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
 
-def get(self, request):
-    code = request.GET.get('code')
-    state = request.GET.get('state')
-    stored_state = request.session.get('oauth_state')
-    session_id = request.session.session_key
-    logger.debug(f"Received state: {state}, Stored state: {stored_state}, Session ID: {session_id}")
-    
-    if not code:
-        logger.error('No authorization code received in callback')
-        return redirect(f'https://muindi-mweusi.onrender.com/login?error=No+authorization+code+received')
+    def get(self, request):
+        code = request.GET.get('code')
+        state = request.GET.get('state')
+        stored_state = request.session.get('oauth_state')
+        session_id = request.session.session_key
+        logger.debug(f"Received state: {state}, Stored state: {stored_state}, Session ID: {session_id}")
 
-    if state != stored_state:
-        logger.error(f'State mismatch. Received: {state}, Stored: {stored_state}, Session ID: {session_id}')
-        return redirect(f'https://muindi-mweusi.onrender.com/login?error=State+mismatch.+Authentication+failed')
-    
+        if not code:
+            logger.error('No authorization code received in callback')
+            return redirect(f'https://muindi-mweusi.onrender.com/login?error=No+authorization+code+received')
+
+        if state != stored_state:
+            logger.error(f'State mismatch. Received: {state}, Stored: {stored_state}, Session ID: {session_id}')
+            return redirect(f'https://muindi-mweusi.onrender.com/login?error=State+mismatch.+Authentication+failed')
 
         try:
             # Exchange code for tokens
