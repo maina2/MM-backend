@@ -51,8 +51,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Google OAuth credentials
-GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
-GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 GOOGLE_REDIRECT_URI='https://muindi-mweusi.onrender.com/auth/google/callback/'
 
 # Session settings - FIXED
