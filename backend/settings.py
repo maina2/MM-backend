@@ -52,7 +52,7 @@ AUTHENTICATION_BACKENDS = [
 
 # Google OAuth credentials
 GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
-GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET')
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 GOOGLE_REDIRECT_URI='https://muindi-mweusi.onrender.com/auth/google/callback/'
 
 # Session settings - FIXED
@@ -144,7 +144,7 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
-CORS_EXPOSE_HEADERS = ['authorization','content-Type', 'set-cookie']
+CORS_EXPOSE_HEADERS = ['authorization','content-Type', 'cookie','set-cookie']
 
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = 'Lax'
