@@ -54,11 +54,13 @@ AUTHENTICATION_BACKENDS = [
 GOOGLE_CLIENT_ID = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', default='')
 GOOGLE_CLIENT_SECRET = config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', default='')
 GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', default='https://muindi-mweusi.onrender.com/auth/google/callback')
+
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = True  
-SESSION_COOKIE_SAMESITE = 'None'  
+SESSION_COOKIE_SECURE = True 
+SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_DOMAIN = None  
-SESSION_ENGINE = 'django.contrib.sessions.backends.db' 
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  
+SESSION_COOKIE_AGE = 1209600 
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
@@ -130,6 +132,7 @@ CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 CORS_ALLOW_HEADERS = [
     'authorization',
     'Content-Type',
+    'Cookie',
     'Authorization'
     'content-type',
     'accept',
@@ -138,7 +141,7 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
-CORS_EXPOSE_HEADERS = ['authorization','Content-Type', 'Authorization']
+CORS_EXPOSE_HEADERS = ['authorization','Content-Type','Cookie', 'Authorization']
 
 # Static and media files
 STATIC_URL = '/static/'

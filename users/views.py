@@ -75,20 +75,21 @@ class LoginView(APIView):
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request):
-        # Handle Google's callback (GET request to /auth/google/callback/)
-        code = request.GET.get('code')
-        state = request.GET.get('state')
-        stored_state = request.session.get('oauth_state')  # Adjust based on how state is stored
-        logger.debug(f"Received state: {state}, Stored state: {stored_state}, Session ID: {request.session.session_key}")
+def get(self, request):
+    code = request.GET.get('code')
+    state = request.GET.get('state')
+    stored_state = request.session.get('oauth_state')
+    session_id = request.session.session_key
+    logger.debug(f"Received state: {state}, Stored state: {stored_state}, Session ID: {session_id}")
+    
+    if not code:
+        logger.error('No authorization code received in callback')
+        return redirect(f'https://muindi-mweusi.onrender.com/login?error=No+authorization+code+received')
 
-        if not code:
-            logger.error('No authorization code received in callback')
-            return redirect(f'https://muindi-mweusi.onrender.com/login?error=No+authorization+code+received')
-
-        if state != stored_state:
-            logger.error('State mismatch. Possible CSRF attack.')
-            return redirect(f'https://muindi-mweusi.onrender.com/login?error=State+mismatch.+Authentication+failed')
+    if state != stored_state:
+        logger.error(f'State mismatch. Received: {state}, Stored: {stored_state}, Session ID: {session_id}')
+        return redirect(f'https://muindi-mweusi.onrender.com/login?error=State+mismatch.+Authentication+failed')
+    
 
         try:
             # Exchange code for tokens
@@ -234,13 +235,20 @@ class StoreStateView(APIView):
         state = request.data.get('state')
         if state:
             request.session['oauth_state'] = state
-            request.session.modified = True
             if not request.session.session_key:
-                request.session.create()  # Ensure session is created
+                request.session.create()  # Create session explicitly
+            request.session.modified = True
             logger.debug(f"Stored state: {state}, Session ID: {request.session.session_key}")
-            return Response({'status': 'State stored'}, status=status.HTTP_200_OK)
+            response = Response({'status': 'State stored'}, status=status.HTTP_200_OK)
+            response.set_cookie(
+                'sessionid',
+                request.session.session_key,
+                httponly=True,
+                secure=True,
+                samesite='None',
+            )
+            return response
         return Response({'error': 'State is missing'}, status=status.HTTP_400_BAD_REQUEST)
-    
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated, IsCustomerUser]
     def get(self, request):
