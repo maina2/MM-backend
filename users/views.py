@@ -71,7 +71,84 @@ class LoginView(APIView):
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
+    def get(self, request):
+        # Handle Google's callback (GET request to /auth/google/callback/)
+        code = request.GET.get('code')
+        state = request.GET.get('state')
+        stored_state = request.session.get('oauth_state') or sessionStorage.getItem('oauth_state')
 
+        if not code:
+            logger.error('No authorization code received in callback')
+            return redirect(f'https://muindi-mweusi.onrender.com/login?error=No+authorization+code+received')
+
+        if state != stored_state:
+            logger.error('State mismatch. Possible CSRF attack.')
+            return redirect(f'https://muindi-mweusi.onrender.com/login?error=State+mismatch.+Authentication+failed')
+
+        try:
+            # Exchange code for tokens
+            token_url = 'https://oauth2.googleapis.com/token'
+            token_data = {
+                'code': code,
+                'client_id': settings.GOOGLE_CLIENT_ID,
+                'client_secret': settings.GOOGLE_CLIENT_SECRET,
+                'redirect_uri': settings.GOOGLE_REDIRECT_URI,
+                'grant_type': 'authorization_code',
+            }
+            token_response = requests.post(token_url, data=token_data)
+            token_response.raise_for_status()
+            token_data = token_response.json()
+            access_token = token_data.get('access_token')
+            logger.debug(f'Access token received: {access_token}')
+
+            # Fetch user info
+            user_info_url = 'https://www.googleapis.com/oauth2/v3/userinfo'
+            user_info_response = requests.get(
+                user_info_url,
+                headers={'Authorization': f'Bearer {access_token}'}
+            )
+            user_info_response.raise_for_status()
+            user_info = user_info_response.json()
+            logger.debug(f'User info: {user_info}')
+
+            # Process user
+            email = user_info.get('email')
+            name = user_info.get('name', '')
+            google_id = user_info.get('sub')
+
+            try:
+                user = CustomUser.objects.get(email=email)
+            except CustomUser.DoesNotExist:
+                user = CustomUser.objects.create(
+                    email=email,
+                    username=email.split('@')[0],
+                    first_name=name.split()[0] if name else '',
+                    last_name=' '.join(name.split()[1:]) if name else '',
+                    is_active=True
+                )
+                user.set_unusable_password()
+                user.save()
+
+            refresh = RefreshToken.for_user(user)
+            serializer = CustomUserSerializer(user)
+
+            # Redirect to frontend with tokens
+            frontend_url = 'https://muindi-mweusi.onrender.com/auth/success'
+            params = {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': serializer.data
+            }
+            redirect_url = f'{frontend_url}?{urlencode(params)}'
+            return redirect(redirect_url)
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f'Token exchange failed: {str(e)}')
+            return redirect(f'https://muindi-mweusi.onrender.com/login?error=Authentication+failed')
+        except Exception as e:
+            logger.error(f'Unexpected error: {str(e)}', exc_info=True)
+            return redirect(f'https://muindi-mweusi.onrender.com/login?error=Unexpected+error')
+            
     def post(self, request):
         code = request.data.get('code')
         logger.debug(f"Received code: {code}")
