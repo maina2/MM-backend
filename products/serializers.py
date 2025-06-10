@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Category, Product
+from cloudinary.uploader import upload
 
 class CategorySerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
@@ -19,7 +20,7 @@ class CategorySerializer(serializers.ModelSerializer):
         return value
 
 
-lass ProductSerializer(serializers.ModelSerializer):
+class ProductSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
     image = serializers.ImageField(required=False, allow_null=True)  
     discounted_price = serializers.ReadOnlyField()
