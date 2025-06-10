@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from .models import Category, Product
 from cloudinary.uploader import upload
+from cloudinary import CloudinaryImage
 
 class CategorySerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Category
@@ -11,7 +12,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         if obj.image:
-            return obj.image.url
+            # Build Cloudinary URL from public_id
+            return CloudinaryImage(str(obj.image)).build_url()
         return None
 
     def validate_name(self, value):
@@ -19,10 +21,24 @@ class CategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A category with this name already exists.")
         return value
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['image'] = self.get_image(instance)
+        return representation
+
+    def update(self, instance, validated_data):
+        if 'image' in validated_data:
+            image_file = validated_data.pop('image')
+            if image_file:
+                upload_result = upload(image_file)
+                instance.image = upload_result['public_id']
+            else:
+                instance.image = None
+        return super().update(instance, validated_data)
 
 class ProductSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
-    image = serializers.ImageField(required=False, allow_null=True)  
+    image = serializers.ImageField(required=False, allow_null=True)
     discounted_price = serializers.ReadOnlyField()
 
     class Meta:
@@ -34,24 +50,22 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         if obj.image:
-            return obj.image.url
+            # Build Cloudinary URL from public_id
+            return CloudinaryImage(str(obj.image)).build_url()
         return None
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['category'] = CategorySerializer(instance.category).data
-        # Ensure image is represented as the Cloudinary URL
         representation['image'] = self.get_image(instance)
         return representation
 
     def update(self, instance, validated_data):
-        # Handle image upload to Cloudinary if provided
         if 'image' in validated_data:
             image_file = validated_data.pop('image')
             if image_file:
-                # Upload to Cloudinary
                 upload_result = upload(image_file)
-                instance.image = upload_result['public_id']  
+                instance.image = upload_result['public_id']
             else:
-                instance.image = None  
+                instance.image = None
         return super().update(instance, validated_data)
