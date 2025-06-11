@@ -51,9 +51,10 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Google OAuth credentials
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
-GOOGLE_CLIENT_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
-GOOGLE_REDIRECT_URI='https://mm-backend-8rp8.onrender.com/auth/google/callback/'
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')  
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')  
+GOOGLE_REDIRECT_URI='https://mm-backend-8rp8.onrender.com/auth/google/callback/'  
+
 
 # Session settings - FIXED
 SESSION_COOKIE_HTTPONLY = True
