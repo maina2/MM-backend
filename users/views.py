@@ -297,6 +297,8 @@ class StoreStateView(APIView):
         
         logger.debug(f"Stored state: {state}, Session ID: {request.session.session_key}")
         return Response({'success': True})
+
+        
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated, IsCustomerUser]
     def get(self, request):
