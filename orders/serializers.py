@@ -9,21 +9,21 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'product', 'quantity', 'price']
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, required=False)  # Make items optional for updates
+    items = OrderItemSerializer(many=True, required=False)  # Optional for updates
     customer = CustomUserSerializer(read_only=True)
     branch = serializers.StringRelatedField(read_only=True)
     branch_id = serializers.PrimaryKeyRelatedField(
-        queryset=Branch.objects.filter(is_active=True), 
-        source='branch', 
-        write_only=True, 
-        required=False  # Make optional for updates
+        queryset=Branch.objects.filter(is_active=True),
+        source='branch',
+        write_only=True,
+        required=False  # Optional for updates
     )
 
     class Meta:
         model = Order
         fields = [
             'id', 'customer', 'total_amount', 'status', 'payment_status',
-            'payment_phone_number', 'created_at', 'updated_at', 'items', 
+            'payment_phone_number', 'created_at', 'updated_at', 'items',
             'request_id', 'branch', 'branch_id'
         ]
         read_only_fields = ['total_amount', 'created_at', 'updated_at', 'payment_status', 'request_id']
@@ -74,16 +74,15 @@ class OrderSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         items_data = validated_data.pop('items', None)
         branch = validated_data.pop('branch', None)
-        
+
         # Update scalar fields
         instance.status = validated_data.get('status', instance.status)
         instance.payment_phone_number = validated_data.get('payment_phone_number', instance.payment_phone_number)
         if branch:
             instance.branch = branch
-        
+
         # Handle items if provided
         if items_data is not None:
-            # Clear existing items
             instance.items.all().delete()
             total_amount = 0
             for item_data in items_data:
@@ -100,6 +99,6 @@ class OrderSerializer(serializers.ModelSerializer):
                 product.save()
                 total_amount += price * quantity
             instance.total_amount = total_amount
-        
+
         instance.save()
         return instance
