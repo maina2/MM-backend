@@ -166,7 +166,7 @@ class GoogleLoginView(APIView):
             serializer = CustomUserSerializer(user)
 
             # Redirect to frontend with tokens
-            frontend_url = 'https://muindi-mweusi.onrender.com/'
+            frontend_url = 'https://muindi-mweusi.onrender.com/auth/google/callback'
             params = {
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
