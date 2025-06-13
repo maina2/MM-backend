@@ -165,8 +165,9 @@ class GoogleLoginView(APIView):
             refresh = RefreshToken.for_user(user)
             serializer = CustomUserSerializer(user)
 
-            # Redirect to frontend with tokens
-            frontend_url = 'https://muindi-mweusi.onrender.com/auth/google/callback'
+            # CHANGE: Redirect to the same domain with a different path
+            # This ensures your React router can handle it
+            frontend_url = 'https://muindi-mweusi.onrender.com/google-callback'  # Changed path
             params = {
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
@@ -185,7 +186,6 @@ class GoogleLoginView(APIView):
         except Exception as e:
             logger.error(f'Unexpected error: {str(e)}', exc_info=True)
             return redirect(f'https://muindi-mweusi.onrender.com/login?error=Unexpected+error')
-            
 class StoreStateView(APIView):
     permission_classes = [AllowAny]
 
