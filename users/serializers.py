@@ -45,11 +45,11 @@ class AdminUserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-    def update(self, validated_data):
+    def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
         for attr, value in validated_data.items():
-            setattr(self.instance, attr, value)
+            setattr(instance, attr, value)
         if password:
-            self.instance.set_password(password)
-        self.instance.save()
-        return self.instance
+            instance.set_password(password)
+        instance.save()
+        return instance
