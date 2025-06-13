@@ -1,7 +1,23 @@
 from rest_framework import serializers
 from .models import Order, OrderItem, Branch
 from products.serializers import ProductSerializer
+from products.models import Product
 from users.serializers import CustomUserSerializer
+
+from rest_framework import serializers
+from .models import Branch
+
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = ['id', 'name', 'address', 'city', 'latitude', 'longitude', 'is_active']
+        read_only_fields = ['id']  # ID is auto-generated and read-only
+
+    def validate_name(self, value):
+
+        if self.instance is None and Branch.objects.filter(name=value).exists():
+            raise serializers.ValidationError("A branch with this name already exists.")
+        return value
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -102,3 +118,40 @@ class OrderSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+class CartItemSerializer(serializers.Serializer):
+    product = serializers.DictField()
+    quantity = serializers.IntegerField(min_value=1)
+
+    def validate_product(self, value):
+        product_id = value.get('id')
+        price = value.get('price')
+        if not product_id or not price:
+            raise serializers.ValidationError("Product must include 'id' and 'price'.")
+        try:
+            product = Product.objects.get(id=product_id)
+            if float(price) != float(product.price):
+                raise serializers.ValidationError("Product price does not match current price.")
+        except Product.DoesNotExist:
+            raise serializers.ValidationError(f"Product with id {product_id} does not exist.")
+        return value
+
+
+class CheckoutSerializer(serializers.Serializer):
+    cart_items = serializers.ListField(child=CartItemSerializer(), min_length=1)
+    phone_number = serializers.CharField(max_length=15)
+    latitude = serializers.FloatField()
+    longitude = serializers.FloatField()
+    branch_id = serializers.IntegerField()  
+
+    def validate_phone_number(self, value):
+        value = value.strip()
+        if value.startswith('2547') and len(value) == 12:
+            value = f'+{value}'
+        elif not (value.startswith('+2547') and len(value) == 13):
+            raise serializers.ValidationError("Phone number must be in the format +2547XXXXXXXX or 2547XXXXXXXX.")
+        return value
+
+    def validate_cart_items(self, value):
+        if not value:
+            raise serializers.ValidationError("Cart cannot be empty.")
+        return value
