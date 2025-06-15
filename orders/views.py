@@ -364,11 +364,6 @@ class OrderDetailView(RetrieveAPIView):
 
 
 class AdminOrderViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for admin order management.
-    Supports listing, retrieving, updating, and deleting orders.
-    Includes filtering, searching, and ordering capabilities.
-    """
     queryset = Order.objects.all().select_related("customer").prefetch_related("items__product")
     serializer_class = OrderSerializer
     permission_classes = [IsAdminUser]
@@ -379,9 +374,6 @@ class AdminOrderViewSet(viewsets.ModelViewSet):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        """
-        Optimizes query and applies search filtering.
-        """
         queryset = super().get_queryset()
         search_query = self.request.query_params.get("search", None)
         if search_query:
@@ -393,35 +385,32 @@ class AdminOrderViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        """
-        Allows admins to create orders manually.
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(customer=request.user)  # Set customer to admin or validate input
+        serializer.save(customer=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-
-        # Recalculate total if items are updated
         if "items" in request.data:
             instance.recalculate_total()
-
+        logger.info(f"Order {instance.id} updated successfully by user {request.user.username}")
         return Response(serializer.data)
 
     def partial_update(self, request, *args, **kwargs):
-
         kwargs["partial"] = True
         return self.update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-
         instance = self.get_object()
+        for item in instance.items.all():
+            product = item.product
+            product.stock += item.quantity
+            product.save()
         self.perform_destroy(instance)
+        logger.info(f"Order {instance.id} deleted successfully by user {request.user.username}")
         return Response(status=status.HTTP_204_NO_CONTENT)
