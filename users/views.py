@@ -206,13 +206,13 @@ class StoreStateView(APIView):
 
 
 class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated, IsCustomerUser]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         serializer = CustomUserSerializer(request.user)
         return Response(serializer.data)
 
 class UserProfileUpdateView(APIView):
-    permission_classes = [IsAuthenticated, IsCustomerUser]
+    permission_classes = [IsAuthenticated]
     def put(self, request):
         serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
